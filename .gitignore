@@ -1,0 +1,40 @@
+# Dependencies
+/vendor
+/node_modules
+
+# Environment
+.env
+/auth.json
+
+# Build & Assets
+/public/build
+/public/hot
+/public/storage
+
+# Storage
+/storage/*.key
+/storage/pail
+*.log
+
+# Testing
+.phpunit.result.cache
+/.phpunit.cache
+
+# IDE & Editors
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+.phpactor.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tools
+/.ddev
+/.claude
+.mcp.json
+Homestead.json
+Homestead.yaml

@@ -1,0 +1,1147 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Cannot call method toDateTimeString\(\) on Carbon\\Carbon\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Core/Console/Commands/ProjectMembersCommand.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{string, string, string, string\}, Closure\(App\\Core\\Models\\ProjectMember\)\: array\{string, string, string, string\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Console/Commands/ProjectMembersCommand.php
+
+		-
+			message: '#^Parameter \#2 \$name of method App\\Core\\Services\\TokenService\:\:generate\(\) expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Console/Commands/TokenCreateCommand.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: true$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Core/Http/Controllers/ArtifactController.php
+
+		-
+			message: '#^Cannot access property \$id on App\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Core/Http/Controllers/ModuleController.php
+
+		-
+			message: '#^Parameter \#2 \$userId of method App\\Core\\Http\\Controllers\\ModuleController\:\:isOwner\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Core/Http/Controllers/ModuleController.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Models\\User\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Core\\Models\\User\>\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Controllers/OAuthController.php
+
+		-
+			message: '#^Parameter \#1 \$known_string of function hash_equals expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Http/Controllers/OAuthController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between App\\Core\\Models\\OAuthAccessToken and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Core/Http/Controllers/OAuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:filter\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Http/Controllers/StoryController.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Controllers\\StoryController\:\:paginatedResponse\(\) has parameter \$paginator with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: app/Core/Http/Controllers/StoryController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:filter\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Http/Controllers/TaskController.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Controllers\\TaskController\:\:paginatedResponse\(\) has parameter \$paginator with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: app/Core/Http/Controllers/TaskController.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\StoreEpicRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/StoreEpicRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\StoreProjectRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/StoreProjectRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\StoreStoryRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/StoreStoryRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\StoreTaskRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/StoreTaskRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\UpdateEpicRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/UpdateEpicRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\UpdateProjectRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/UpdateProjectRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\UpdateStoryRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/UpdateStoryRequest.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Requests\\UpdateTaskRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Requests/UpdateTaskRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ArtifactSearchResource\:\:\$identifier\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ArtifactSearchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ArtifactSearchResource\:\:\$titre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ArtifactSearchResource.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Resources\\ArtifactSearchResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Resources/ArtifactSearchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\EpicResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/EpicResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\EpicResource\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/EpicResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\EpicResource\:\:\$identifier\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/EpicResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\EpicResource\:\:\$titre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/EpicResource.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Resources\\EpicResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Resources/EpicResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ProjectResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ProjectResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ProjectResource\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ProjectResource\:\:\$modules\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\ProjectResource\:\:\$titre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/ProjectResource.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Resources\\ProjectResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Resources/ProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$epic\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$identifier\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$nature\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$ordre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$priorite\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$reference_doc\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$story_points\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$tags\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$titre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\StoryResource\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Core\\Http\\Resources\\StoryResource\:\:blockedBy\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Core\\Http\\Resources\\StoryResource\:\:blocks\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Resources\\StoryResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Resources/StoryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$estimation_temps\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$identifier\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$nature\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$ordre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$priorite\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$project\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$story\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$tags\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$titre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Http\\Resources\\TaskResource\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Core\\Http\\Resources\\TaskResource\:\:blockedBy\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Core\\Http\\Resources\\TaskResource\:\:blocks\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Method App\\Core\\Http\\Resources\\TaskResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Http/Resources/TaskResource.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Contracts\\McpResourceInterface\:\:read\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Contracts/McpResourceInterface.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Contracts\\McpResourceInterface\:\:read\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Contracts/McpResourceInterface.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Contracts\\McpToolInterface\:\:execute\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Contracts/McpToolInterface.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Contracts\\McpToolInterface\:\:tools\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Contracts/McpToolInterface.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:executeToolSafely\(\) has parameter \$arguments with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:executeToolSafely\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleInitialize\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleInitialize\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleNotification\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleRequest\(\) has parameter \$jsonRpc with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleRequest\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleResourcesList\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleResourcesRead\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleResourcesRead\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleToolsCall\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleToolsCall\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleToolsList\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleToolsList\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:matchesResourceUri\(\) has parameter \$extracted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:matchesResourceUri\(\) never assigns null to &\$extracted so it can be removed from the by\-ref type\.$#'
+			identifier: parameterByRef.unusedType
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:registerModuleTools\(\) has parameter \$toolProviders with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:resolveProjectFromParams\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:resolveTools\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Parameter \#2 \.\.\.\$arrays of function array_merge expects array, array\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function str_replace expects array\<string\>\|string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpTransport\:\:decodeRequest\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpTransport.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpTransport\:\:encodeError\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpTransport.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpTransport\:\:encodeResponse\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpTransport.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpTransport\:\:jsonResponse\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpTransport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$identifier\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$titre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:resolveArtifact\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:resolveArtifact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:searchArtifacts\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:searchArtifacts\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Parameter \#1 \$array of function array_values contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Return type of call to function array_values contains unresolvable type\.$#'
+			identifier: function.unresolvableReturnType
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:all\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:addDependency\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:addDependency\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:listDependencies\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:listDependencies\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:removeDependency\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:removeDependency\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:createEpic\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:createEpic\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:deleteEpic\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:deleteEpic\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:formatEpic\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getEpic\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getEpic\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:listEpics\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:listEpics\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:updateEpic\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:updateEpic\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array, Closure\(App\\Core\\Models\\Epic\)\: array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:activateModule\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:activateModule\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:deactivateModule\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:deactivateModule\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:listAvailable\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:listProjectModules\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:listProjectModules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:createProject\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:createProject\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:deleteProject\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:deleteProject\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getProject\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getProject\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:listProjects\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:listProjects\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:updateProject\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:updateProject\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:createStories\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:createStories\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:createStory\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:createStory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:deleteStory\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:deleteStory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:formatStory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getStory\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getStory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:listEpicStories\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:listEpicStories\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:listStories\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:listStories\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:updateStory\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:updateStory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:updateStoryStatus\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:updateStoryStatus\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:validateStoryData\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array, Closure\(App\\Core\\Models\\Story\)\: array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:filter\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:createTask\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:createTask\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:createTasks\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:createTasks\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:deleteTask\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:deleteTask\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:formatTask\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getTask\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getTask\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:listStoryTasks\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:listStoryTasks\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:listTasks\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:listTasks\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:updateTask\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:updateTask\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:updateTaskStatus\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:updateTaskStatus\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:validateTaskData\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array, Closure\(App\\Core\\Models\\Task\)\: array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 12
+			path: app/Core/Services/DependencyService.php
+
+		-
+			message: '#^Method App\\Core\\Services\\DependencyService\:\:getDependencies\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 2
+			path: app/Core/Services/DependencyService.php
+
+		-
+			message: '#^Method App\\Core\\Services\\DependencyService\:\:resolveModels\(\) has parameter \$rows with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: app/Core/Services/DependencyService.php
+
+		-
+			message: '#^Method App\\Core\\Services\\DependencyService\:\:resolveModels\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Services/DependencyService.php
+
+		-
+			message: '#^Method App\\Core\\Services\\TokenService\:\:generate\(\) should return array\{token\: string, model\: App\\Core\\Models\\ApiToken\} but returns array\{token\: string, model\: Illuminate\\Database\\Eloquent\\Model\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Core/Services/TokenService.php
+
+		-
+			message: '#^Method App\\Core\\Services\\TokenService\:\:listForUser\(\) should return Illuminate\\Database\\Eloquent\\Collection\<int, App\\Core\\Models\\ApiToken\> but returns Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Core/Services/TokenService.php
+
+		-
+			message: '#^Method App\\Modules\\Example\\Mcp\\ExampleTools\:\:execute\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Example/Mcp/ExampleTools.php
+
+		-
+			message: '#^Method App\\Modules\\Example\\Mcp\\ExampleTools\:\:tools\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Example/Mcp/ExampleTools.php

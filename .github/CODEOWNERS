@@ -1,0 +1,11 @@
+# Global owner — reviews all PRs by default
+* @arthur2jolly
+
+# MCP core
+app/Core/Mcp/ @arthur2jolly
+
+# Modules
+app/Modules/ @arthur2jolly
+
+# CI/CD
+.github/ @arthur2jolly
