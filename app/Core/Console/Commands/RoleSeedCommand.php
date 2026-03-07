@@ -21,6 +21,7 @@ class RoleSeedCommand extends Command
         // Check if sample data already exists
         if (User::where('name', 'Administrator User')->exists()) {
             $this->warn('Sample users already exist. Skipping...');
+
             return self::SUCCESS;
         }
 
@@ -56,7 +57,7 @@ class RoleSeedCommand extends Command
                 ->where('user_id', $user->id)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 ProjectMember::create([
                     'project_id' => $project->id,
                     'user_id' => $user->id,

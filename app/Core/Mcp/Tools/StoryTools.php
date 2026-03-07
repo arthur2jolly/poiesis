@@ -239,7 +239,7 @@ class StoryTools implements McpToolInterface
         $perPage = min((int) ($params['per_page'] ?? 25), 100);
         $page = max((int) ($params['page'] ?? 1), 1);
 
-        $query = Story::whereHas('epic', fn($q) => $q->where('project_id', $project->id))
+        $query = Story::whereHas('epic', fn ($q) => $q->where('project_id', $project->id))
             ->filter($params)
             ->with('artifact')
             ->withCount('tasks');
@@ -247,7 +247,7 @@ class StoryTools implements McpToolInterface
         $stories = $query->paginate($perPage, ['*'], 'page', $page);
 
         return [
-            'data' => $stories->map(fn(Story $s) => $s->format())->all(),
+            'data' => $stories->map(fn (Story $s) => $s->format())->all(),
             'meta' => [
                 'current_page' => $stories->currentPage(),
                 'per_page' => $stories->perPage(),
@@ -269,7 +269,7 @@ class StoryTools implements McpToolInterface
             ->orderBy('ordre')->paginate($perPage, ['*'], 'page', $page);
 
         return [
-            'data' => $stories->map(fn(Story $s) => $s->format())->all(),
+            'data' => $stories->map(fn (Story $s) => $s->format())->all(),
             'meta' => [
                 'current_page' => $stories->currentPage(),
                 'per_page' => $stories->perPage(),
@@ -293,8 +293,8 @@ class StoryTools implements McpToolInterface
         $deps = app(\App\Core\Services\DependencyService::class)->getDependencies($story);
 
         $result = $story->format();
-        $result['blocked_by'] = array_map(fn($m) => $m->identifier, $deps['blocked_by']);
-        $result['blocks'] = array_map(fn($m) => $m->identifier, $deps['blocks']);
+        $result['blocked_by'] = array_map(fn ($m) => $m->identifier, $deps['blocked_by']);
+        $result['blocks'] = array_map(fn ($m) => $m->identifier, $deps['blocks']);
 
         return $result;
     }

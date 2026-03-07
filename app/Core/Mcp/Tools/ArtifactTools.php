@@ -12,7 +12,6 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\User;
-use App\Core\Support\Role;
 use Illuminate\Validation\ValidationException;
 
 class ArtifactTools implements McpToolInterface

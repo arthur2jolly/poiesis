@@ -1,5 +1,10 @@
 # Poiesis — Modular Agile Project Management for AI Agents
 
+[<image-card alt="PHP Version" src="https://img.shields.io/badge/PHP-8.4+-blue?logo=php" ></image-card>](https://php.net)
+[<image-card alt="Laravel" src="https://img.shields.io/badge/Laravel-12.x-red?logo=laravel" ></image-card>](https://laravel.com)
+[<image-card alt="License" src="https://img.shields.io/badge/License-Apache%202.0-yellow" ></image-card>](LICENSE)
+[<image-card alt="MCP 2.0" src="https://img.shields.io/badge/MCP-2.0-orange" ></image-card>](https://modelcontextprotocol.io/)
+
 **Poiesis** is a production-ready agile project management platform designed to be controlled via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It provides AI agents with structured tools and workflows to manage projects, epics, stories, and tasks in a fully modular architecture.
 
 ---
@@ -36,6 +41,18 @@ The MCP server exposes:
 - Laravel 12
 - MariaDB 11.8+
 - Docker (optional, for containerized deployment)
+
+### Quick Start
+
+```bash
+git clone https://github.com/arthur2jolly/poiesis.git
+cd poiesis
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
 
 ---
 

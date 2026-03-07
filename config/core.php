@@ -98,7 +98,7 @@ return [
     | OAuth2 durees (en minutes)
     |--------------------------------------------------------------------------
     */
-    'oauth_access_token_ttl' => env('OAUTH_ACCESS_TOKEN_TTL', 60),
-    'oauth_refresh_token_ttl' => env('OAUTH_REFRESH_TOKEN_TTL', 43200),
+    'oauth_access_token_ttl' => (int) env('OAUTH_ACCESS_TOKEN_TTL', 60),
+    'oauth_refresh_token_ttl' => (int) env('OAUTH_REFRESH_TOKEN_TTL', 43200),
 
 ];

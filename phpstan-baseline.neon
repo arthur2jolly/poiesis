@@ -13,6 +13,18 @@ parameters:
 			path: app/Core/Console/Commands/ProjectMembersCommand.php
 
 		-
+			message: '#^Cannot access property \$id on App\\Core\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Core/Console/Commands/RoleSeedCommand.php
+
+		-
+			message: '#^Cannot access property \$name on App\\Core\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Core/Console/Commands/RoleSeedCommand.php
+
+		-
 			message: '#^Parameter \#2 \$name of method App\\Core\\Services\\TokenService\:\:generate\(\) expects string, string\|null given\.$#'
 			identifier: argument.type
 			count: 1
@@ -427,6 +439,12 @@ parameters:
 			path: app/Core/Mcp/Contracts/McpToolInterface.php
 
 		-
+			message: '#^Method App\\Core\\Mcp\\Prompts\\AgileWorkflowPrompt\:\:guide\(\) should return string but returns string\|false\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Core/Mcp/Prompts/AgileWorkflowPrompt.php
+
+		-
 			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:executeToolSafely\(\) has parameter \$arguments with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -451,7 +469,19 @@ parameters:
 			path: app/Core/Mcp/Server/McpServer.php
 
 		-
-			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handleNotification\(\) return type has no value type specified in iterable type array\.$#'
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handlePromptsGet\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handlePromptsGet\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Server/McpServer.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Server\\McpServer\:\:handlePromptsList\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Server/McpServer.php
@@ -579,12 +609,30 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$identifier\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 1
 			path: app/Core/Mcp/Tools/ArtifactTools.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$titre\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:format\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:getResolveArtifactDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:getSearchArtifactsDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/ArtifactTools.php
 
@@ -609,6 +657,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:searchArtifacts\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ArtifactTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ArtifactTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/ArtifactTools.php
 
@@ -655,6 +709,24 @@ parameters:
 			path: app/Core/Mcp/Tools/DependencyTools.php
 
 		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:getAddDependencyDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:getListDependenciesDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:getRemoveDependencyDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:listDependencies\(\) has parameter \$params with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -675,6 +747,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:removeDependency\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/DependencyTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\DependencyTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/DependencyTools.php
 
@@ -703,7 +781,13 @@ parameters:
 			path: app/Core/Mcp/Tools/EpicTools.php
 
 		-
-			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:formatEpic\(\) return type has no value type specified in iterable type array\.$#'
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getCreateEpicDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getDeleteEpicDescription\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/EpicTools.php
@@ -721,6 +805,24 @@ parameters:
 			path: app/Core/Mcp/Tools/EpicTools.php
 
 		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getGetEpicDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getListEpicsDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:getUpdateEpicDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:listEpics\(\) has parameter \$params with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -729,6 +831,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:listEpics\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/EpicTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\EpicTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/EpicTools.php
 
@@ -775,6 +883,30 @@ parameters:
 			path: app/Core/Mcp/Tools/ModuleTools.php
 
 		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:getActivateModuleDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:getDeactivateModuleDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:getListAvailableModulesDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:getListProjectModulesDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:listAvailable\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -789,6 +921,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:listProjectModules\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ModuleTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ModuleTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/ModuleTools.php
 
@@ -817,6 +955,30 @@ parameters:
 			path: app/Core/Mcp/Tools/ProjectTools.php
 
 		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getCreateProjectDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getDeleteProjectDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getGetProjectDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getListProjectsDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getProject\(\) has parameter \$params with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -824,6 +986,12 @@ parameters:
 
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getProject\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:getUpdateProjectDescription\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/ProjectTools.php
@@ -837,6 +1005,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:listProjects\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/ProjectTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\ProjectTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/ProjectTools.php
 
@@ -889,7 +1063,37 @@ parameters:
 			path: app/Core/Mcp/Tools/StoryTools.php
 
 		-
-			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:formatStory\(\) return type has no value type specified in iterable type array\.$#'
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getCreateStoriesToolDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getCreateStoryToolDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getDeleteStoryToolDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getGetStoryToolDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getListEpicStoriesToolDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getListStoriesToolDescription\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/StoryTools.php
@@ -902,6 +1106,18 @@ parameters:
 
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getStory\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getUpdateStoryStatusToolDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:getUpdateStoryToolDescription\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/StoryTools.php
@@ -927,6 +1143,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:listStories\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/StoryTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array, array, array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/StoryTools.php
 
@@ -1015,7 +1237,37 @@ parameters:
 			path: app/Core/Mcp/Tools/TaskTools.php
 
 		-
-			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:formatTask\(\) return type has no value type specified in iterable type array\.$#'
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getCreateTaskDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getCreateTasksDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getDeleteTaskDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getGetTaskDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getListStoryTasksDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getListTasksDescription\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/TaskTools.php
@@ -1028,6 +1280,18 @@ parameters:
 
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getTask\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getUpdateTaskDescription\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:getUpdateTaskStatusDescription\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Core/Mcp/Tools/TaskTools.php
@@ -1053,6 +1317,12 @@ parameters:
 		-
 			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:listTasks\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Mcp/Tools/TaskTools.php
+
+		-
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array, array, array, array\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/TaskTools.php
 
@@ -1099,6 +1369,36 @@ parameters:
 			path: app/Core/Mcp/Tools/TaskTools.php
 
 		-
+			message: '#^Method App\\Core\\Models\\Epic\:\:format\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Models/Epic.php
+
+		-
+			message: '#^Method App\\Core\\Models\\Project\:\:format\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Models/Project.php
+
+		-
+			message: '#^Method App\\Core\\Models\\Story\:\:format\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Models/Story.php
+
+		-
+			message: '#^Method App\\Core\\Models\\Task\:\:format\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Models/Task.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Core/Models/User.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 12
@@ -1135,6 +1435,18 @@ parameters:
 			path: app/Core/Services/TokenService.php
 
 		-
+			message: '#^Method App\\Core\\Support\\Role\:\:all\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Support/Role.php
+
+		-
+			message: '#^Method App\\Core\\Support\\Role\:\:options\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Core/Support/Role.php
+
+		-
 			message: '#^Method App\\Modules\\Example\\Mcp\\ExampleTools\:\:execute\(\) has parameter \$params with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1145,3 +1457,15 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Modules/Example/Mcp/ExampleTools.php
+
+		-
+			message: '#^Access to an undefined property App\\Core\\Models\\Artifact\:\:\$epic\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Policies/ArtifactPolicy.php
+
+		-
+			message: '#^Cannot access property \$epic on App\\Core\\Models\\Story\|null\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Policies/TaskPolicy.php

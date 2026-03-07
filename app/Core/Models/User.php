@@ -31,7 +31,7 @@ class User extends Authenticatable
         return UserFactory::new();
     }
 
-    protected function setPasswordAttribute(string|null $value): void
+    protected function setPasswordAttribute(?string $value): void
     {
         if ($value === null || empty($value)) {
             throw new \InvalidArgumentException('Password cannot be empty.');

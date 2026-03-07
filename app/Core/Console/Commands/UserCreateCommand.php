@@ -6,7 +6,6 @@ use App\Core\Models\User;
 use App\Core\Services\TokenService;
 use App\Core\Support\Role;
 use Illuminate\Console\Command;
-use Illuminate\Validation\ValidationException;
 
 class UserCreateCommand extends Command
 {
@@ -27,16 +26,19 @@ class UserCreateCommand extends Command
 
         if (empty($password)) {
             $this->error('Password cannot be empty.');
+
             return self::FAILURE;
         }
 
         if (strlen($password) < 8) {
             $this->error('Password must be at least 8 characters long.');
+
             return self::FAILURE;
         }
 
-        if (!Role::isValid($role)) {
+        if (! Role::isValid($role)) {
             $this->error("Invalid role: {$role}. Valid roles: 1 (Administrator), 2 (Manager), 3 (Developer), 4 (Viewer)");
+
             return self::FAILURE;
         }
 

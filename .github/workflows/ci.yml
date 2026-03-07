@@ -20,7 +20,7 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
       - run: composer install --no-interaction --prefer-dist
-      - run: php artisan pint --check
+      - run: ./vendor/bin/pint --test
 
   analyse:
     name: Static Analysis (PHPStan)
@@ -37,7 +37,7 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
-      - run: php artisan stan
+      - run: ./vendor/bin/phpstan analyse --no-progress
 
   test:
     name: Tests (Pest)
@@ -74,4 +74,4 @@ jobs:
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
       - run: php artisan migrate --force
-      - run: php artisan test
+      - run: ./vendor/bin/pest
