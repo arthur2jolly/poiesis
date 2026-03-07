@@ -18,11 +18,17 @@ class RoleAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     private Project $project;
+
     private User $adminUser;
+
     private User $managerUser;
+
     private User $developerUser;
+
     private User $viewerUser;
+
     private User $outsiderUser;
+
     private User $outsiderDeveloper;
 
     protected function setUp(): void
@@ -75,7 +81,7 @@ class RoleAuthorizationTest extends TestCase
             'id' => '1',
             'method' => $method,
             'params' => $params,
-        ], ['Authorization' => 'Bearer ' . $token['raw']]);
+        ], ['Authorization' => 'Bearer '.$token['raw']]);
     }
 
     private function mcpCall(string $toolName, array $arguments, User $user): \Illuminate\Testing\TestResponse

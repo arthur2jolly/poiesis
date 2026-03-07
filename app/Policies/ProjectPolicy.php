@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Core\Models\Project;
-use App\Core\Models\ProjectMember;
 use App\Core\Models\User;
 use App\Core\Support\Role;
 

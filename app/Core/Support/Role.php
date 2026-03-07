@@ -7,8 +7,11 @@ namespace App\Core\Support;
 class Role
 {
     public const ADMINISTRATOR = 1;
+
     public const MANAGER = 2;
+
     public const DEVELOPER = 3;
+
     public const VIEWER = 4;
 
     /**

@@ -38,7 +38,7 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        if (!Role::canCrudArtifacts($user->role)) {
+        if (! Role::canCrudArtifacts($user->role)) {
             return false;
         }
 
@@ -54,7 +54,7 @@ class TaskPolicy
      */
     public function delete(User $user, Task $task): bool
     {
-        if (!Role::canCrudArtifacts($user->role)) {
+        if (! Role::canCrudArtifacts($user->role)) {
             return false;
         }
 

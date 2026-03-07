@@ -17,8 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class TaskTools implements McpToolInterface
 {
-
-/**
+    /**
      * Returns the list of tool definitions provided by this class.
      *
      * @return array<int, array{name: string, description: string, inputSchema: array<string, mixed>}>
@@ -230,7 +229,6 @@ class TaskTools implements McpToolInterface
             ],
         ];
     }
-    
 
     private function listTasks(array $params, User $user): array
     {
