@@ -35,6 +35,7 @@ Thumbs.db
 # Tools
 /.ddev
 /.claude
+/CLAUDE.md
 .mcp.json
 Homestead.json
 Homestead.yaml
