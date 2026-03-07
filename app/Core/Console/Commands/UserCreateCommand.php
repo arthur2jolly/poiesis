@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 
 class UserCreateCommand extends Command
 {
-    protected $signature = 'user:create {name} {password} {--role=4 : User role (1=Administrator, 2=Manager, 3=Developer, 4=Viewer)}';
+    protected $signature = 'user:create {--role=4 : User role (1=Administrator, 2=Manager, 3=Developer, 4=Viewer)}';
 
     protected $description = 'Create a new user with a password';
 
@@ -20,8 +20,8 @@ class UserCreateCommand extends Command
 
     public function handle(): int
     {
-        $name = $this->argument('name');
-        $password = $this->argument('password');
+        $name = $this->ask('Username');
+        $password = $this->secret('Password');
         $role = (int) $this->option('role');
 
         if (empty($password)) {

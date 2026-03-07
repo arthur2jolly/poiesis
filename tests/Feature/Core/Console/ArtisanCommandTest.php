@@ -17,7 +17,9 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_creates_user_and_token(): void
     {
-        $this->artisan('user:create', ['name' => 'Alice', 'password' => 'SecurePassword123'])
+        $this->artisan('user:create')
+            ->expectsQuestion('Username', 'Alice')
+            ->expectsQuestion('Password', 'SecurePassword123')
             ->expectsConfirmation('Generate a token now?', 'yes')
             ->expectsQuestion('Token name', 'default')
             ->assertSuccessful();
@@ -31,7 +33,9 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_without_token(): void
     {
-        $this->artisan('user:create', ['name' => 'Bob', 'password' => 'AnotherPassword456'])
+        $this->artisan('user:create')
+            ->expectsQuestion('Username', 'Bob')
+            ->expectsQuestion('Password', 'AnotherPassword456')
             ->expectsConfirmation('Generate a token now?', 'no')
             ->assertSuccessful();
 
@@ -44,7 +48,9 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_stores_hash_not_raw(): void
     {
-        $this->artisan('user:create', ['name' => 'Carol', 'password' => 'HashedPassword789'])
+        $this->artisan('user:create')
+            ->expectsQuestion('Username', 'Carol')
+            ->expectsQuestion('Password', 'HashedPassword789')
             ->expectsConfirmation('Generate a token now?', 'yes')
             ->expectsQuestion('Token name', 'test-token')
             ->assertSuccessful();
@@ -57,13 +63,17 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_requires_password(): void
     {
-        $this->artisan('user:create', ['name' => 'NoPwd', 'password' => ''])
+        $this->artisan('user:create')
+            ->expectsQuestion('Username', 'NoPwd')
+            ->expectsQuestion('Password', '')
             ->assertFailed();
     }
 
     public function test_user_create_password_too_short(): void
     {
-        $this->artisan('user:create', ['name' => 'ShortPwd', 'password' => 'Short1'])
+        $this->artisan('user:create')
+            ->expectsQuestion('Username', 'ShortPwd')
+            ->expectsQuestion('Password', 'Short1')
             ->assertFailed();
     }
 
