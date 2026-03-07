@@ -6,7 +6,7 @@ We actively support the latest release and the `main` branch.
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities by email to **jolly.interactive@gmail.com**.
+Please report security vulnerabilities by email to **[jolly.interactive@gmail.com](mailto:jolly.interactive@gmail.com)**.
 
 Include:
 - Description of the issue
