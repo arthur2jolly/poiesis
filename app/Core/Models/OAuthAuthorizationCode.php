@@ -2,12 +2,14 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string $oauth_client_id
  * @property string $user_id
  * @property string $code
@@ -22,14 +24,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class OAuthAuthorizationCode extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
     protected $table = 'oauth_authorization_codes';
 
     public const UPDATED_AT = null;
 
     protected $fillable = [
-        'oauth_client_id', 'user_id', 'code', 'redirect_uri',
+        'tenant_id', 'oauth_client_id', 'user_id', 'code', 'redirect_uri',
         'scopes', 'code_challenge', 'code_challenge_method', 'expires_at',
     ];
 

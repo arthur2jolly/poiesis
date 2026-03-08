@@ -71,32 +71,35 @@ function makeModule(string $slug, array $deps = []): ModuleInterface
 
 describe('ProjectMember::isLastOwner()', function () {
     it('returns true when the user is the only owner', function () {
-        $project = Project::factory()->create();
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $user->id, 'role' => 'owner']);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $user->id, 'position' => 'owner']);
 
         expect(ProjectMember::isLastOwner($project->id, $user->id))->toBeTrue();
     });
 
     it('returns false when multiple owners exist', function () {
-        $project = Project::factory()->create();
-        $u1 = User::factory()->create();
-        $u2 = User::factory()->create();
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $u1 = User::factory()->create(['tenant_id' => $tenant->id]);
+        $u2 = User::factory()->create(['tenant_id' => $tenant->id]);
 
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $u1->id, 'role' => 'owner']);
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $u2->id, 'role' => 'owner']);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $u1->id, 'position' => 'owner']);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $u2->id, 'position' => 'owner']);
 
         expect(ProjectMember::isLastOwner($project->id, $u1->id))->toBeFalse();
     });
 
     it('returns false when the user is only a member', function () {
-        $project = Project::factory()->create();
-        $owner = User::factory()->create();
-        $member = User::factory()->create();
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $owner = User::factory()->create(['tenant_id' => $tenant->id]);
+        $member = User::factory()->create(['tenant_id' => $tenant->id]);
 
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $owner->id, 'role' => 'owner']);
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $member->id, 'role' => 'member']);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $owner->id, 'position' => 'owner']);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $member->id, 'position' => 'member']);
 
         expect(ProjectMember::isLastOwner($project->id, $member->id))->toBeFalse();
     });
@@ -108,7 +111,8 @@ describe('ProjectMember::isLastOwner()', function () {
 
 describe('Story::transitionStatus()', function () {
     beforeEach(function () {
-        $this->project = Project::factory()->create(['code' => 'STY']);
+        $tenant = createTenant();
+        $this->project = Project::factory()->create(['code' => 'STY', 'tenant_id' => $tenant->id]);
         $this->epic = Epic::factory()->create(['project_id' => $this->project->id]);
     });
 
@@ -164,7 +168,8 @@ describe('Story::transitionStatus()', function () {
 
 describe('Task::transitionStatus()', function () {
     beforeEach(function () {
-        $this->project = Project::factory()->create(['code' => 'TSK']);
+        $tenant = createTenant();
+        $this->project = Project::factory()->create(['code' => 'TSK', 'tenant_id' => $tenant->id]);
     });
 
     it('transitions draft → open', function () {
@@ -220,7 +225,8 @@ describe('Task::transitionStatus()', function () {
 describe('DependencyService::addDependency()', function () {
     beforeEach(function () {
         $this->service = new DependencyService;
-        $project = Project::factory()->create(['code' => 'DEP']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['code' => 'DEP', 'tenant_id' => $tenant->id]);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $this->epic = $epic;
         $this->project = $project;
@@ -272,7 +278,8 @@ describe('DependencyService::addDependency()', function () {
 
 describe('HasArtifactIdentifier', function () {
     it('generates identifiers matching {CODE}-{N}', function () {
-        $project = Project::factory()->create(['code' => 'TST']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['code' => 'TST', 'tenant_id' => $tenant->id]);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id]);
 
@@ -281,7 +288,8 @@ describe('HasArtifactIdentifier', function () {
     });
 
     it('assigns sequential numbers starting at 1', function () {
-        $project = Project::factory()->create(['code' => 'SEQ']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['code' => 'SEQ', 'tenant_id' => $tenant->id]);
         $epic1 = Epic::factory()->create(['project_id' => $project->id]);
         $epic2 = Epic::factory()->create(['project_id' => $project->id]);
 
@@ -340,39 +348,45 @@ describe('Project code validation regex', function () {
 
 describe('ApiToken::isExpired()', function () {
     it('returns true when expires_at is in the past', function () {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $token = ApiToken::create([
             'user_id' => $user->id,
             'name' => 'test',
             'token' => $raw['hash'],
             'expires_at' => Carbon::yesterday(),
+            'tenant_id' => $tenant->id,
         ]);
 
         expect($token->isExpired())->toBeTrue();
     });
 
     it('returns false when expires_at is in the future', function () {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $token = ApiToken::create([
             'user_id' => $user->id,
             'name' => 'test',
             'token' => $raw['hash'],
             'expires_at' => Carbon::tomorrow(),
+            'tenant_id' => $tenant->id,
         ]);
 
         expect($token->isExpired())->toBeFalse();
     });
 
     it('returns false when expires_at is null', function () {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $token = ApiToken::create([
             'user_id' => $user->id,
             'name' => 'test',
             'token' => $raw['hash'],
             'expires_at' => null,
+            'tenant_id' => $tenant->id,
         ]);
 
         expect($token->isExpired())->toBeFalse();
@@ -385,11 +399,14 @@ describe('ApiToken::isExpired()', function () {
 
 describe('OAuthAccessToken expiry', function () {
     beforeEach(function () {
-        $this->user = User::factory()->create();
+        $tenant = createTenant();
+        $this->tenant = $tenant;
+        $this->user = User::factory()->create(['tenant_id' => $tenant->id]);
         $this->client = \App\Core\Models\OAuthClient::create([
             'name' => 'Test Client',
             'client_id' => 'oauth-test-client-'.uniqid(),
             'redirect_uris' => ['http://localhost/callback'],
+            'tenant_id' => $tenant->id,
         ]);
     });
 
@@ -400,6 +417,7 @@ describe('OAuthAccessToken expiry', function () {
             'token' => bin2hex(random_bytes(16)),
             'scopes' => [],
             'expires_at' => Carbon::yesterday(),
+            'tenant_id' => $this->tenant->id,
         ]);
 
         expect($token->expires_at->isPast())->toBeTrue();
@@ -412,6 +430,7 @@ describe('OAuthAccessToken expiry', function () {
             'token' => bin2hex(random_bytes(16)),
             'scopes' => [],
             'expires_at' => Carbon::tomorrow(),
+            'tenant_id' => $this->tenant->id,
         ]);
 
         expect($token->expires_at->isPast())->toBeFalse();
@@ -505,12 +524,12 @@ describe('config(core.*)', function () {
         expect(config('core.work_natures'))->toBeArray()->not->toBeEmpty();
     });
 
-    it('exposes project_roles', function () {
-        expect(config('core.project_roles'))->toBeArray()->not->toBeEmpty();
+    it('exposes project_positions', function () {
+        expect(config('core.project_positions'))->toBeArray()->not->toBeEmpty();
     });
 
-    it('exposes default_project_role', function () {
-        expect(config('core.default_project_role'))->toBeString()->not->toBeEmpty();
+    it('exposes default_project_position', function () {
+        expect(config('core.default_project_position'))->toBeString()->not->toBeEmpty();
     });
 
     it('exposes oauth_scopes', function () {

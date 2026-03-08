@@ -186,7 +186,7 @@ class ProjectTools implements McpToolInterface
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'role' => config('core.default_project_member_role', 'owner'),
+            'position' => config('core.default_project_member_position', 'owner'),
         ]);
 
         return $project->format();
@@ -226,7 +226,7 @@ class ProjectTools implements McpToolInterface
 
         $isOwner = ProjectMember::where('project_id', $project->id)
             ->where('user_id', $user->id)
-            ->where('role', 'owner')
+            ->where('position', 'owner')
             ->exists();
 
         if (! $isOwner) {

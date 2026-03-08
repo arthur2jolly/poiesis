@@ -3,6 +3,7 @@
 namespace Tests\Unit\Core\Models;
 
 use App\Core\Models\ApiToken;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,6 +12,14 @@ use Tests\TestCase;
 class ApiTokenTest extends TestCase
 {
     use RefreshDatabase;
+
+    private Tenant $tenant;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tenant = Tenant::factory()->create();
+    }
 
     public function test_generate_raw_returns_prefixed_token_and_hash(): void
     {
@@ -23,10 +32,11 @@ class ApiTokenTest extends TestCase
 
     public function test_is_expired_returns_false_when_null(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $token = ApiToken::generateRaw();
         $apiToken = ApiToken::create([
             'user_id' => $user->id,
+            'tenant_id' => $this->tenant->id,
             'name' => 'test',
             'token' => $token['hash'],
             'expires_at' => null,
@@ -37,10 +47,11 @@ class ApiTokenTest extends TestCase
 
     public function test_is_expired_returns_true_for_past_date(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $token = ApiToken::generateRaw();
         $apiToken = ApiToken::create([
             'user_id' => $user->id,
+            'tenant_id' => $this->tenant->id,
             'name' => 'test',
             'token' => $token['hash'],
             'expires_at' => Carbon::yesterday(),
@@ -51,10 +62,11 @@ class ApiTokenTest extends TestCase
 
     public function test_is_expired_returns_false_for_future_date(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $token = ApiToken::generateRaw();
         $apiToken = ApiToken::create([
             'user_id' => $user->id,
+            'tenant_id' => $this->tenant->id,
             'name' => 'test',
             'token' => $token['hash'],
             'expires_at' => Carbon::tomorrow(),
@@ -65,10 +77,11 @@ class ApiTokenTest extends TestCase
 
     public function test_record_usage_updates_last_used_at(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $token = ApiToken::generateRaw();
         $apiToken = ApiToken::create([
             'user_id' => $user->id,
+            'tenant_id' => $this->tenant->id,
             'name' => 'test',
             'token' => $token['hash'],
         ]);

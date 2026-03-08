@@ -2,6 +2,7 @@
 
 namespace App\Core\Console\Commands;
 
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\TokenService;
 use App\Core\Support\Role;
@@ -9,7 +10,7 @@ use Illuminate\Console\Command;
 
 class UserCreateCommand extends Command
 {
-    protected $signature = 'user:create {--role=4 : User role (1=Administrator, 2=Manager, 3=Developer, 4=Viewer)}';
+    protected $signature = 'user:create {--tenant= : Tenant slug (required)} {--role=4 : User role (1=Administrator, 2=Manager, 3=Developer, 4=Viewer)}';
 
     protected $description = 'Create a new user with a password';
 
@@ -20,6 +21,21 @@ class UserCreateCommand extends Command
 
     public function handle(): int
     {
+        $tenantSlug = $this->option('tenant');
+
+        if ($tenantSlug === null) {
+            $this->error('The --tenant option is required.');
+
+            return self::FAILURE;
+        }
+
+        $tenant = Tenant::where('slug', $tenantSlug)->first();
+        if ($tenant === null) {
+            $this->error("Tenant not found: {$tenantSlug}");
+
+            return self::FAILURE;
+        }
+
         $name = $this->ask('Username');
         $password = $this->secret('Password');
         $role = (int) $this->option('role');
@@ -42,7 +58,12 @@ class UserCreateCommand extends Command
             return self::FAILURE;
         }
 
-        $user = User::create(['name' => $name, 'password' => $password, 'role' => $role]);
+        $user = User::withoutTenantScope()->create([
+            'tenant_id' => $tenant->id,
+            'name' => $name,
+            'password' => $password,
+            'role' => $role,
+        ]);
 
         $this->info("User created: {$user->id}");
 

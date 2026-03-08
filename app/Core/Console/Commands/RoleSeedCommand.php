@@ -61,7 +61,7 @@ class RoleSeedCommand extends Command
                 ProjectMember::create([
                     'project_id' => $project->id,
                     'user_id' => $user->id,
-                    'role' => 'member', // Project-level role, not user role
+                    'position' => 'member',
                 ]);
 
                 $this->info("Added {$user->name} to project {$project->code}");

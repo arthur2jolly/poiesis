@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string $oauth_client_id
  * @property string $user_id
  * @property string $token
@@ -21,14 +23,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class OAuthAccessToken extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
     protected $table = 'oauth_access_tokens';
 
     public const UPDATED_AT = null;
 
     protected $fillable = [
-        'oauth_client_id', 'user_id', 'token', 'scopes', 'expires_at',
+        'tenant_id', 'oauth_client_id', 'user_id', 'token', 'scopes', 'expires_at',
     ];
 
     protected $casts = [

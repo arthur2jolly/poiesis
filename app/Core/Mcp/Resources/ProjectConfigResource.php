@@ -57,7 +57,8 @@ class ProjectConfigResource implements McpResourceInterface
             'statuts' => config('core.statuts'),
             'default_statut' => config('core.default_statut'),
             'work_natures' => config('core.work_natures'),
-            'project_roles' => config('core.project_roles'),
+            'project_positions' => config('core.project_positions'),
+            'user_policies' => array_map('strtolower', config('core.user_roles')),
             'oauth_scopes' => config('core.oauth_scopes'),
             'active_modules' => $project->modules ?? [],
         ];

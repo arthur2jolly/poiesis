@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string $name
  * @property string|null $password
  * @property int $role
@@ -24,7 +26,7 @@ use Illuminate\Support\Facades\Hash;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasUuids;
+    use BelongsToTenant, HasFactory, HasUuids;
 
     protected static function newFactory(): UserFactory
     {
@@ -76,7 +78,7 @@ class User extends Authenticatable
         return config('core.user_roles')[$this->role] ?? 'Unknown';
     }
 
-    protected $fillable = ['name', 'password', 'role'];
+    protected $fillable = ['tenant_id', 'name', 'password', 'role'];
 
     protected $hidden = ['password'];
 
@@ -88,7 +90,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Project::class, 'project_members')
             ->using(ProjectMember::class)
-            ->withPivot('role', 'created_at');
+            ->withPivot('position', 'created_at');
     }
 
     public function apiTokens(): HasMany

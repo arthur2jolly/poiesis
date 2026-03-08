@@ -6,9 +6,10 @@ use App\Core\Models\ApiToken;
 use App\Core\Models\Epic;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
-use App\Core\Models\Story;
 use App\Core\Models\Task;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
+use App\Core\Services\TenantManager;
 use App\Core\Support\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,6 +19,8 @@ class RoleAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     private Project $project;
+
+    private Tenant $tenant;
 
     private User $adminUser;
 
@@ -35,46 +38,52 @@ class RoleAuthorizationTest extends TestCase
     {
         parent::setUp();
 
+        $this->tenant = createTenant();
+        $tenant = $this->tenant;
+
         // Create users with different roles
-        $this->adminUser = User::factory()->administrator()->create(['name' => 'Admin']);
-        $this->managerUser = User::factory()->manager()->create(['name' => 'Manager']);
-        $this->developerUser = User::factory()->developer()->create(['name' => 'Developer']);
-        $this->viewerUser = User::factory()->viewer()->create(['name' => 'Viewer']);
-        $this->outsiderUser = User::factory()->viewer()->create(['name' => 'Outsider']);
-        $this->outsiderDeveloper = User::factory()->developer()->create(['name' => 'OutsiderDev']);
+        $this->adminUser = User::factory()->administrator()->create(['name' => 'Admin', 'tenant_id' => $tenant->id]);
+        $this->managerUser = User::factory()->manager()->create(['name' => 'Manager', 'tenant_id' => $tenant->id]);
+        $this->developerUser = User::factory()->developer()->create(['name' => 'Developer', 'tenant_id' => $tenant->id]);
+        $this->viewerUser = User::factory()->viewer()->create(['name' => 'Viewer', 'tenant_id' => $tenant->id]);
+        $this->outsiderUser = User::factory()->viewer()->create(['name' => 'Outsider', 'tenant_id' => $tenant->id]);
+        $this->outsiderDeveloper = User::factory()->developer()->create(['name' => 'OutsiderDev', 'tenant_id' => $tenant->id]);
 
         // Create a project and add members
-        $this->project = Project::factory()->create(['code' => 'AUTH']);
+        $this->project = Project::factory()->create(['code' => 'AUTH', 'tenant_id' => $tenant->id]);
 
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $this->adminUser->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
 
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $this->managerUser->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $this->developerUser->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $this->viewerUser->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
+
+        // Set TenantManager so factory-created artifacts get the correct tenant_id
+        app(TenantManager::class)->setTenant($tenant);
     }
 
     private function mcp(string $method, User $user, array $params = []): \Illuminate\Testing\TestResponse
     {
         $token = ApiToken::generateRaw();
-        $user->apiTokens()->create(['name' => 'test', 'token' => $token['hash']]);
+        $user->apiTokens()->create(['name' => 'test', 'token' => $token['hash'], 'tenant_id' => $this->tenant->id]);
 
         return $this->postJson('/mcp', [
             'jsonrpc' => '2.0',

@@ -43,7 +43,7 @@ class ProjectController extends Controller
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
 
         return (new ProjectResource($project))
@@ -79,7 +79,7 @@ class ProjectController extends Controller
 
         $isOwner = ProjectMember::where('project_id', $project->id)
             ->where('user_id', $user->id)
-            ->where('role', 'owner')
+            ->where('position', 'owner')
             ->exists();
 
         if (! $isOwner) {

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'tenant_id' => Tenant::factory(),
             'name' => fake()->name(),
             'password' => Hash::make('password'),
             'role' => 4, // Default to Viewer

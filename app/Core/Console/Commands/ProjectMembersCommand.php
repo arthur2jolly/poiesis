@@ -25,11 +25,11 @@ class ProjectMembersCommand extends Command
         $members = $project->members()->with('user')->get();
 
         $this->table(
-            ['User ID', 'Name', 'Role', 'Member Since'],
+            ['User ID', 'Name', 'Position', 'Member Since'],
             $members->map(fn (ProjectMember $m) => [
                 $m->user_id,
                 $m->user->name,
-                $m->role,
+                $m->position,
                 $m->created_at->toDateTimeString(),
             ])
         );

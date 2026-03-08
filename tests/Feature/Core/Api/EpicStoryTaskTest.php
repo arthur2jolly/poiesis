@@ -2,14 +2,11 @@
 
 namespace Tests\Feature\Core\Api;
 
-use App\Core\Models\ApiToken;
 use App\Core\Models\Epic;
-use App\Core\Models\Project;
-use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
-use App\Core\Models\User;
 use App\Core\Services\DependencyService;
+use App\Core\Services\TenantManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,22 +16,18 @@ class EpicStoryTaskTest extends TestCase
 
     private function createSetup(): array
     {
-        $user = User::factory()->create();
-        $raw = ApiToken::generateRaw();
-        $user->apiTokens()->create(['name' => 'test', 'token' => $raw['hash']]);
-        $project = Project::factory()->create(['code' => 'TST']);
-        ProjectMember::create([
-            'project_id' => $project->id,
-            'user_id' => $user->id,
-            'role' => 'owner',
-        ]);
+        $auth = createAuth();
+        $project = setupProject($auth, ['code' => 'TST']);
 
-        return ['user' => $user, 'token' => $raw['raw'], 'project' => $project];
+        // Set TenantManager so factory-created artifacts get the correct tenant_id
+        app(TenantManager::class)->setTenant($auth['tenant']);
+
+        return ['user' => $auth['user'], 'token' => $auth['token'], 'project' => $project, 'tenant' => $auth['tenant']];
     }
 
     private function h(string $token): array
     {
-        return ['Authorization' => 'Bearer '.$token];
+        return authHeader($token);
     }
 
     // 1. Create epic — identifier assigned automatically

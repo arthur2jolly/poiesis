@@ -148,7 +148,7 @@ class MigrationTest extends TestCase
     public function test_projects_unique_index_on_code(): void
     {
         $indexes = $this->indexList('projects');
-        $this->assertIndexExists($indexes, ['code'], true);
+        $this->assertIndexExists($indexes, ['tenant_id', 'code'], true);
     }
 
     // -------------------------------------------------------------------------
@@ -409,17 +409,17 @@ class MigrationTest extends TestCase
     {
         $this->assertTrue(
             Schema::hasColumns('project_members', [
-                'id', 'project_id', 'user_id', 'role', 'created_at',
+                'id', 'project_id', 'user_id', 'position', 'created_at',
             ])
         );
     }
 
-    public function test_project_members_role_default(): void
+    public function test_project_members_position_default(): void
     {
         $cols = $this->columnInfo('project_members');
 
-        $this->assertEquals('1', $cols['role']->notnull);
-        $this->assertEquals("'member'", $cols['role']->dflt_value);
+        $this->assertEquals('1', $cols['position']->notnull);
+        $this->assertEquals("'member'", $cols['position']->dflt_value);
     }
 
     public function test_project_members_unique_index_on_project_user(): void
@@ -605,7 +605,7 @@ class MigrationTest extends TestCase
     public function test_artifacts_unique_index_on_identifier(): void
     {
         $indexes = $this->indexList('artifacts');
-        $this->assertIndexExists($indexes, ['identifier'], true);
+        $this->assertIndexExists($indexes, ['tenant_id', 'identifier'], true);
     }
 
     public function test_artifacts_unique_index_on_project_sequence(): void

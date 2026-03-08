@@ -16,6 +16,7 @@ use App\Core\Models\Task;
 use App\Core\Models\User;
 use App\Core\Module\ModuleRegistry;
 use App\Core\Services\DependencyService;
+use App\Core\Services\TenantManager;
 use Carbon\Carbon;
 
 // ---------------------------------------------------------------------------
@@ -105,22 +106,22 @@ describe('CL1: Last owner removal rejected', function (): void {
 
         $this->patchJson(
             "/api/v1/projects/CL1B/members/{$member->id}",
-            ['role' => 'member'],
+            ['position' => 'member'],
             authHeader($auth['token'])
         )->assertStatus(422);
 
-        expect($member->fresh()->role)->toBe('owner');
+        expect($member->fresh()->position)->toBe('owner');
     });
 
     it('allows removing an owner when another owner exists', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL1C']);
 
-        $secondOwner = User::factory()->create();
+        $secondOwner = User::factory()->create(['tenant_id' => $auth['tenant']->id]);
         $secondMember = ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $secondOwner->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
 
         $firstMember = ProjectMember::where('project_id', $project->id)
@@ -223,6 +224,7 @@ describe('CL4: Concurrent artifact creation produces unique identifiers', functi
     it('assigns unique sequential identifiers when creating 10 stories sequentially', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL4']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $epicId = $epic->fresh()->identifier;
 
@@ -269,12 +271,14 @@ describe('CL4: Concurrent artifact creation produces unique identifiers', functi
 describe('CL5: Expired token rejected', function (): void {
 
     it('returns 401 when the API token is expired', function (): void {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $user->apiTokens()->create([
             'name' => 'expired-token',
             'token' => $raw['hash'],
             'expires_at' => Carbon::now()->subHour(),
+            'tenant_id' => $tenant->id,
         ]);
 
         $this->getJson('/api/v1/ping', authHeader($raw['raw']))
@@ -282,12 +286,14 @@ describe('CL5: Expired token rejected', function (): void {
     });
 
     it('returns 200 when the API token is valid and not expired', function (): void {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $user->apiTokens()->create([
             'name' => 'valid-token',
             'token' => $raw['hash'],
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $tenant->id,
         ]);
 
         $this->getJson('/api/v1/ping', authHeader($raw['raw']))
@@ -303,12 +309,14 @@ describe('CL5: Expired token rejected', function (): void {
 describe('CL6: OAuth2 refresh with valid refresh token', function (): void {
 
     it('issues new tokens when refresh token is valid', function (): void {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $client = OAuthClient::create([
             'name' => 'CL6 Client',
             'client_id' => 'cl6-client',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $tenant->id,
         ]);
 
         $accessToken = OAuthAccessToken::create([
@@ -317,6 +325,7 @@ describe('CL6: OAuth2 refresh with valid refresh token', function (): void {
             'token' => hash('sha256', 'cl6-old-access'),
             'scopes' => ['projects:read'],
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $tenant->id,
         ]);
 
         $rawRefresh = 'rt-'.bin2hex(random_bytes(20));
@@ -344,12 +353,14 @@ describe('CL6: OAuth2 refresh with valid refresh token', function (): void {
 describe('CL7: OAuth2 refresh with expired refresh token', function (): void {
 
     it('returns 400 when refresh token is expired', function (): void {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $client = OAuthClient::create([
             'name' => 'CL7 Client',
             'client_id' => 'cl7-client',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $tenant->id,
         ]);
 
         $accessToken = OAuthAccessToken::create([
@@ -358,6 +369,7 @@ describe('CL7: OAuth2 refresh with expired refresh token', function (): void {
             'token' => hash('sha256', 'cl7-old-access'),
             'scopes' => null,
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $tenant->id,
         ]);
 
         $rawRefresh = 'rt-'.bin2hex(random_bytes(20));
@@ -387,6 +399,7 @@ describe('CL8: Cascade deletion epic -> stories -> tasks', function (): void {
     it('deletes stories and tasks when an epic is deleted', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL8']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
 
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id]);
@@ -419,6 +432,7 @@ describe('CL9: Story deletion cleans up artifact', function (): void {
     it('removes the story record when a story is deleted via API', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL9']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
 
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id]);
@@ -447,6 +461,7 @@ describe('CL10: Standalone task cannot be re-linked to a story', function (): vo
     it('ignores story_id when updating a standalone task', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL10']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
 
         // Créer un epic et une story pour fournir un story_id cible
         $epic = Epic::factory()->create(['project_id' => $project->id]);
@@ -574,7 +589,7 @@ describe('CL13: Duplicate project code rejected', function (): void {
 
     it('returns 422 when creating a project with an already existing code', function (): void {
         $auth = createAuth();
-        Project::factory()->create(['code' => 'DUP13']);
+        Project::factory()->create(['code' => 'DUP13', 'tenant_id' => $auth['tenant']->id]);
 
         $this->postJson(
             '/api/v1/projects',
@@ -595,6 +610,7 @@ describe('CL14: Invalid type/priority value rejected', function (): void {
     it('rejects a story with an invalid type', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL14A']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $epicId = $epic->fresh()->identifier;
 
@@ -609,6 +625,7 @@ describe('CL14: Invalid type/priority value rejected', function (): void {
     it('rejects a story with an invalid priority', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL14B']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $epicId = $epic->fresh()->identifier;
 
@@ -666,6 +683,7 @@ describe('CL16: Module data retained after deactivation', function (): void {
     it('keeps project data after module deactivation', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL16', 'modules' => ['example']]);
+        app(TenantManager::class)->setTenant($auth['tenant']);
 
         // Crée un epic (donnée métier core) pendant que le module est actif
         $epic = Epic::factory()->create([
@@ -700,10 +718,11 @@ describe('CL16: Module data retained after deactivation', function (): void {
 describe('CL17: User without project access gets 403', function (): void {
 
     it('returns 403 when accessing a project the user is not a member of', function (): void {
-        $owner = createAuth();
+        $tenant = createTenant();
+        $owner = createAuth($tenant);
         $project = setupProject($owner, ['code' => 'CL17']);
 
-        $stranger = createAuth();
+        $stranger = createAuth($tenant);
 
         $this->getJson(
             '/api/v1/projects/CL17/',
@@ -712,14 +731,15 @@ describe('CL17: User without project access gets 403', function (): void {
     });
 
     it('returns 200 when the user is a member of the project', function (): void {
-        $owner = createAuth();
+        $tenant = createTenant();
+        $owner = createAuth($tenant);
         $project = setupProject($owner, ['code' => 'CL17B']);
 
-        $member = createAuth();
+        $member = createAuth($tenant);
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $member['user']->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         $this->getJson(
@@ -737,11 +757,13 @@ describe('CL17: User without project access gets 403', function (): void {
 describe('CL18: Dynamic client registration', function (): void {
 
     it('creates a new OAuth client via the registration endpoint', function (): void {
+        $tenant = createTenant();
         $this->postJson('/oauth/register', [
             'client_name' => 'CL18 Test App',
             'redirect_uris' => ['https://app.example.com/callback'],
             'grant_types' => ['authorization_code'],
             'scope' => 'projects:read projects:write',
+            'tenant_slug' => $tenant->slug,
         ])->assertStatus(201)
             ->assertJsonStructure(['client_id', 'client_name', 'redirect_uris', 'grant_types']);
 
@@ -749,15 +771,19 @@ describe('CL18: Dynamic client registration', function (): void {
     });
 
     it('rejects registration without redirect_uris', function (): void {
+        $tenant = createTenant();
         $this->postJson('/oauth/register', [
             'client_name' => 'Missing URIs',
+            'tenant_slug' => $tenant->slug,
         ])->assertStatus(422);
     });
 
     it('rejects registration with invalid redirect URIs', function (): void {
+        $tenant = createTenant();
         $this->postJson('/oauth/register', [
             'client_name' => 'Bad URI App',
             'redirect_uris' => ['not-a-valid-url'],
+            'tenant_slug' => $tenant->slug,
         ])->assertStatus(422);
     });
 
@@ -772,6 +798,7 @@ describe('CL19: Invalid status transition rejected', function (): void {
     it('rejects transitioning from open to draft', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL19']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id, 'statut' => 'open']);
         $storyId = $story->fresh()->identifier;
@@ -786,6 +813,7 @@ describe('CL19: Invalid status transition rejected', function (): void {
     it('rejects transitioning from draft to closed', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL19B']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id, 'statut' => 'draft']);
         $storyId = $story->fresh()->identifier;
@@ -800,6 +828,7 @@ describe('CL19: Invalid status transition rejected', function (): void {
     it('accepts valid transition draft -> open', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL19C']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id, 'statut' => 'draft']);
         $storyId = $story->fresh()->identifier;
@@ -822,6 +851,7 @@ describe('CL20: Circular dependency rejected', function (): void {
     it('rejects adding B->A when A->B already exists', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL20']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $storyA = Story::factory()->create(['epic_id' => $epic->id]);
         $storyB = Story::factory()->create(['epic_id' => $epic->id]);
@@ -852,6 +882,7 @@ describe('CL21: Dependency on non-existent item rejected', function (): void {
     it('returns 404 when one of the identifiers does not exist', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL21']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = Story::factory()->create(['epic_id' => $epic->id]);
         $idA = $story->fresh()->identifier;
@@ -883,6 +914,7 @@ describe('CL22: Batch creation with invalid item — zero items created, error i
     it('creates zero stories when one item in the batch is invalid', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL22']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $epicId = $epic->fresh()->identifier;
 
@@ -937,6 +969,7 @@ describe('CL23: Deleting blocking item removes orphan dependencies', function ()
     it('removes the dependency when the blocking story is deleted', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL23']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $storyA = Story::factory()->create(['epic_id' => $epic->id]);
         $storyB = Story::factory()->create(['epic_id' => $epic->id]);
@@ -973,6 +1006,7 @@ describe('CL23: Deleting blocking item removes orphan dependencies', function ()
     it('removes all dependencies of a deleted item (both directions)', function (): void {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'CL23B']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $storyA = Story::factory()->create(['epic_id' => $epic->id]);
         $storyB = Story::factory()->create(['epic_id' => $epic->id]);

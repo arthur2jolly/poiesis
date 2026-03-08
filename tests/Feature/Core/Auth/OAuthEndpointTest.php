@@ -5,6 +5,7 @@ namespace Tests\Feature\Core\Auth;
 use App\Core\Models\OAuthAccessToken;
 use App\Core\Models\OAuthClient;
 use App\Core\Models\OAuthRefreshToken;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,6 +14,14 @@ use Tests\TestCase;
 class OAuthEndpointTest extends TestCase
 {
     use RefreshDatabase;
+
+    private Tenant $tenant;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tenant = Tenant::factory()->create();
+    }
 
     // -- Metadata endpoint --
 
@@ -43,6 +52,7 @@ class OAuthEndpointTest extends TestCase
         $response = $this->postJson('/oauth/register', [
             'client_name' => 'Test App',
             'redirect_uris' => ['http://localhost/callback'],
+            'tenant_slug' => $this->tenant->slug,
         ]);
 
         $response->assertStatus(201);
@@ -55,6 +65,7 @@ class OAuthEndpointTest extends TestCase
     {
         $response = $this->postJson('/oauth/register', [
             'client_name' => 'Test App',
+            'tenant_slug' => $this->tenant->slug,
         ]);
 
         $response->assertStatus(422);
@@ -65,6 +76,7 @@ class OAuthEndpointTest extends TestCase
         $response = $this->postJson('/oauth/register', [
             'client_name' => 'Test App',
             'redirect_uris' => ['not-a-url'],
+            'tenant_slug' => $this->tenant->slug,
         ]);
 
         $response->assertStatus(422);
@@ -74,12 +86,13 @@ class OAuthEndpointTest extends TestCase
 
     public function test_revoke_access_token_deletes_it(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $client = OAuthClient::create([
             'name' => 'Revoke Test',
             'client_id' => 'revoke-client',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $this->tenant->id,
         ]);
         $rawToken = 'aa-'.bin2hex(random_bytes(20));
         $accessToken = OAuthAccessToken::create([
@@ -88,6 +101,7 @@ class OAuthEndpointTest extends TestCase
             'token' => hash('sha256', $rawToken),
             'scopes' => ['projects:read'],
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $this->tenant->id,
         ]);
 
         $response = $this->postJson('/oauth/revoke', ['token' => $rawToken]);
@@ -105,12 +119,13 @@ class OAuthEndpointTest extends TestCase
 
     public function test_revoke_refresh_token_marks_as_revoked(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $client = OAuthClient::create([
             'name' => 'Revoke RT Test',
             'client_id' => 'revoke-rt-client',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $this->tenant->id,
         ]);
         $accessToken = OAuthAccessToken::create([
             'oauth_client_id' => $client->id,
@@ -118,6 +133,7 @@ class OAuthEndpointTest extends TestCase
             'token' => hash('sha256', 'some-access-token'),
             'scopes' => ['projects:read'],
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $this->tenant->id,
         ]);
         $rawRefresh = 'rt-'.bin2hex(random_bytes(20));
         OAuthRefreshToken::create([
@@ -139,12 +155,13 @@ class OAuthEndpointTest extends TestCase
 
     public function test_refresh_token_issues_new_tokens(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $client = OAuthClient::create([
             'name' => 'Refresh Test',
             'client_id' => 'refresh-client',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $this->tenant->id,
         ]);
         $accessToken = OAuthAccessToken::create([
             'oauth_client_id' => $client->id,
@@ -152,6 +169,7 @@ class OAuthEndpointTest extends TestCase
             'token' => hash('sha256', 'old-access-token'),
             'scopes' => ['projects:read'],
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $this->tenant->id,
         ]);
         $rawRefresh = 'rt-'.bin2hex(random_bytes(20));
         OAuthRefreshToken::create([
@@ -172,12 +190,13 @@ class OAuthEndpointTest extends TestCase
 
     public function test_expired_refresh_token_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $client = OAuthClient::create([
             'name' => 'Expired RT Test',
             'client_id' => 'expired-rt-client',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $this->tenant->id,
         ]);
         $accessToken = OAuthAccessToken::create([
             'oauth_client_id' => $client->id,
@@ -185,6 +204,7 @@ class OAuthEndpointTest extends TestCase
             'token' => hash('sha256', 'some-at'),
             'scopes' => null,
             'expires_at' => Carbon::now()->addHour(),
+            'tenant_id' => $this->tenant->id,
         ]);
         $rawRefresh = 'rt-'.bin2hex(random_bytes(20));
         OAuthRefreshToken::create([

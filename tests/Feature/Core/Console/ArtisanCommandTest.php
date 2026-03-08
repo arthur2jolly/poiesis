@@ -5,6 +5,7 @@ namespace Tests\Feature\Core\Console;
 use App\Core\Models\ApiToken;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,11 +14,19 @@ class ArtisanCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Tenant $tenant;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tenant = Tenant::factory()->create(['slug' => 'test-tenant']);
+    }
+
     // ── user:create ──────────────────────────────────────────
 
     public function test_user_create_creates_user_and_token(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'Alice')
             ->expectsQuestion('Password', 'SecurePassword123')
             ->expectsConfirmation('Generate a token now?', 'yes')
@@ -26,14 +35,14 @@ class ArtisanCommandTest extends TestCase
 
         $this->assertDatabaseHas('users', ['name' => 'Alice']);
 
-        $user = User::where('name', 'Alice')->first();
+        $user = User::withoutTenantScope()->where('name', 'Alice')->first();
         $this->assertCount(1, $user->apiTokens);
         $this->assertTrue($user->password !== null);
     }
 
     public function test_user_create_without_token(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'Bob')
             ->expectsQuestion('Password', 'AnotherPassword456')
             ->expectsConfirmation('Generate a token now?', 'no')
@@ -41,29 +50,35 @@ class ArtisanCommandTest extends TestCase
 
         $this->assertDatabaseHas('users', ['name' => 'Bob']);
 
-        $user = User::where('name', 'Bob')->first();
+        $user = User::withoutTenantScope()->where('name', 'Bob')->first();
         $this->assertCount(0, $user->apiTokens);
         $this->assertTrue($user->password !== null);
     }
 
     public function test_user_create_stores_hash_not_raw(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'Carol')
             ->expectsQuestion('Password', 'HashedPassword789')
             ->expectsConfirmation('Generate a token now?', 'yes')
             ->expectsQuestion('Token name', 'test-token')
             ->assertSuccessful();
 
-        $token = ApiToken::first();
+        $token = ApiToken::withoutTenantScope()->first();
         // Raw tokens start with 'aa-', stored hash should not
         $this->assertNotNull($token->token);
         $this->assertStringNotContainsString('aa-', $token->token);
     }
 
-    public function test_user_create_requires_password(): void
+    public function test_user_create_requires_tenant(): void
     {
         $this->artisan('user:create')
+            ->assertFailed();
+    }
+
+    public function test_user_create_requires_password(): void
+    {
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'NoPwd')
             ->expectsQuestion('Password', '')
             ->assertFailed();
@@ -71,7 +86,7 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_password_too_short(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'ShortPwd')
             ->expectsQuestion('Password', 'Short1')
             ->assertFailed();
@@ -81,7 +96,8 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_list_shows_all_users(): void
     {
-        User::factory()->count(3)->create();
+        $tenant = createTenant();
+        User::factory()->count(3)->create(['tenant_id' => $tenant->id]);
 
         $this->artisan('user:list')
             ->assertSuccessful();
@@ -91,7 +107,8 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_update_renames_user(): void
     {
-        User::factory()->create(['name' => 'OldName', 'password' => 'OldPassword123']);
+        $tenant = createTenant();
+        User::factory()->create(['name' => 'OldName', 'password' => 'OldPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('user:update', ['name' => 'OldName', '--name' => 'NewName'])
             ->expectsConfirmation('Update name to "NewName" for "OldName"?', 'yes')
@@ -103,7 +120,8 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_update_fails_without_option(): void
     {
-        User::factory()->create(['name' => 'TestUser', 'password' => 'TestPassword123']);
+        $tenant = createTenant();
+        User::factory()->create(['name' => 'TestUser', 'password' => 'TestPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('user:update', ['name' => 'TestUser'])
             ->assertFailed();
@@ -111,7 +129,8 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_update_password(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'OldPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'OldPassword123', 'tenant_id' => $tenant->id]);
         $oldPasswordHash = $user->password;
 
         $this->artisan('user:update', ['name' => 'Agent', '--password' => 'NewPassword456'])
@@ -125,20 +144,22 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_update_password_and_name(): void
     {
-        User::factory()->create(['name' => 'OldAgent', 'password' => 'OldPassword123']);
+        $tenant = createTenant();
+        User::factory()->create(['name' => 'OldAgent', 'password' => 'OldPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('user:update', ['name' => 'OldAgent', '--name' => 'NewAgent', '--password' => 'NewPassword456'])
             ->expectsConfirmation('Update name to "NewAgent" and password for "OldAgent"?', 'yes')
             ->assertSuccessful();
 
         $this->assertDatabaseHas('users', ['name' => 'NewAgent']);
-        $user = User::where('name', 'NewAgent')->first();
+        $user = User::withoutTenantScope()->where('name', 'NewAgent')->first();
         $this->assertTrue(\Illuminate\Support\Facades\Hash::check('NewPassword456', $user->password));
     }
 
     public function test_user_update_password_empty_rejected(): void
     {
-        User::factory()->create(['name' => 'Agent', 'password' => 'CurrentPassword123']);
+        $tenant = createTenant();
+        User::factory()->create(['name' => 'Agent', 'password' => 'CurrentPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('user:update', ['name' => 'Agent', '--password' => ''])
             ->assertFailed();
@@ -146,7 +167,8 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_update_password_too_short_rejected(): void
     {
-        User::factory()->create(['name' => 'Agent', 'password' => 'CurrentPassword123']);
+        $tenant = createTenant();
+        User::factory()->create(['name' => 'Agent', 'password' => 'CurrentPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('user:update', ['name' => 'Agent', '--password' => 'Short1'])
             ->assertFailed();
@@ -156,9 +178,10 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_delete_removes_user_and_tokens(): void
     {
-        $user = User::factory()->create(['name' => 'Doomed', 'password' => 'DoomedPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Doomed', 'password' => 'DoomedPassword123', 'tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
-        $user->apiTokens()->create(['name' => 'tok', 'token' => $raw['hash']]);
+        $user->apiTokens()->create(['name' => 'tok', 'token' => $raw['hash'], 'tenant_id' => $tenant->id]);
 
         $this->artisan('user:delete', ['name' => 'Doomed'])
             ->expectsConfirmation('Delete this user? This action is irreversible.', 'yes')
@@ -178,24 +201,26 @@ class ArtisanCommandTest extends TestCase
 
     public function test_token_create_permanent(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('token:create', ['user' => 'Agent'])
             ->assertSuccessful();
 
-        $token = ApiToken::first();
+        $token = ApiToken::withoutTenantScope()->first();
         $this->assertNull($token->expires_at);
         $this->assertEquals('default', $token->name);
     }
 
     public function test_token_create_with_expiry_days(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('token:create', ['user' => 'Agent', '--expires' => '30d', '--name' => 'ci'])
             ->assertSuccessful();
 
-        $token = ApiToken::first();
+        $token = ApiToken::withoutTenantScope()->first();
         $this->assertNotNull($token->expires_at);
         $this->assertEquals('ci', $token->name);
         // Should expire approximately 30 days from now
@@ -205,12 +230,13 @@ class ArtisanCommandTest extends TestCase
 
     public function test_token_create_with_expiry_hours(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('token:create', ['user' => 'Agent', '--expires' => '6h'])
             ->assertSuccessful();
 
-        $token = ApiToken::first();
+        $token = ApiToken::withoutTenantScope()->first();
         $this->assertNotNull($token->expires_at);
         $this->assertTrue($token->expires_at->greaterThan(now()->addHours(5)));
         $this->assertTrue($token->expires_at->lessThan(now()->addHours(7)));
@@ -218,7 +244,8 @@ class ArtisanCommandTest extends TestCase
 
     public function test_token_create_invalid_expires_format(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('token:create', ['user' => 'Agent', '--expires' => 'invalid'])
             ->assertFailed();
@@ -236,11 +263,12 @@ class ArtisanCommandTest extends TestCase
 
     public function test_token_list_shows_tokens(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123', 'tenant_id' => $tenant->id]);
         $raw1 = ApiToken::generateRaw();
         $raw2 = ApiToken::generateRaw();
-        $user->apiTokens()->create(['name' => 'tok1', 'token' => $raw1['hash']]);
-        $user->apiTokens()->create(['name' => 'tok2', 'token' => $raw2['hash']]);
+        $user->apiTokens()->create(['name' => 'tok1', 'token' => $raw1['hash'], 'tenant_id' => $tenant->id]);
+        $user->apiTokens()->create(['name' => 'tok2', 'token' => $raw2['hash'], 'tenant_id' => $tenant->id]);
 
         $this->artisan('token:list', ['user' => 'Agent'])
             ->assertSuccessful();
@@ -256,9 +284,10 @@ class ArtisanCommandTest extends TestCase
 
     public function test_token_revoke_deletes_token(): void
     {
-        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123']);
+        $tenant = createTenant();
+        $user = User::factory()->create(['name' => 'Agent', 'password' => 'AgentPassword123', 'tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
-        $token = $user->apiTokens()->create(['name' => 'tok', 'token' => $raw['hash']]);
+        $token = $user->apiTokens()->create(['name' => 'tok', 'token' => $raw['hash'], 'tenant_id' => $tenant->id]);
 
         $this->artisan('token:revoke', ['token_id' => $token->id])
             ->expectsConfirmation('Revoke this token?', 'yes')
@@ -277,12 +306,13 @@ class ArtisanCommandTest extends TestCase
 
     public function test_project_members_shows_members(): void
     {
-        $project = Project::factory()->create();
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
 
         $this->artisan('project:members', ['code' => $project->code])
@@ -299,8 +329,9 @@ class ArtisanCommandTest extends TestCase
 
     public function test_project_add_member_adds_member(): void
     {
-        $project = Project::factory()->create();
-        $user = User::factory()->create(['name' => 'DevBot']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['name' => 'DevBot', 'tenant_id' => $tenant->id]);
 
         $this->artisan('project:add-member', [
             'code' => $project->code,
@@ -310,36 +341,38 @@ class ArtisanCommandTest extends TestCase
         $this->assertDatabaseHas('project_members', [
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
     }
 
     public function test_project_add_member_as_owner(): void
     {
-        $project = Project::factory()->create();
-        $user = User::factory()->create(['name' => 'Admin', 'password' => 'AdminPassword123']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['name' => 'Admin', 'password' => 'AdminPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('project:add-member', [
             'code' => $project->code,
             'user' => 'Admin',
-            '--role' => 'owner',
+            '--position' => 'owner',
         ])->assertSuccessful();
 
         $this->assertDatabaseHas('project_members', [
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
     }
 
     public function test_project_add_member_duplicate_rejected(): void
     {
-        $project = Project::factory()->create();
-        $user = User::factory()->create(['name' => 'DevBot']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['name' => 'DevBot', 'tenant_id' => $tenant->id]);
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         $this->artisan('project:add-member', [
@@ -350,13 +383,14 @@ class ArtisanCommandTest extends TestCase
 
     public function test_project_add_member_invalid_role(): void
     {
-        $project = Project::factory()->create();
-        User::factory()->create(['name' => 'DevBot', 'password' => 'DevBotPassword123']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        User::factory()->create(['name' => 'DevBot', 'password' => 'DevBotPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('project:add-member', [
             'code' => $project->code,
             'user' => 'DevBot',
-            '--role' => 'admin',
+            '--position' => 'admin',
         ])->assertFailed();
     }
 
@@ -364,19 +398,20 @@ class ArtisanCommandTest extends TestCase
 
     public function test_project_remove_member_removes_member(): void
     {
-        $project = Project::factory()->create();
-        $owner = User::factory()->create(['name' => 'Owner', 'password' => 'OwnerPassword123']);
-        $member = User::factory()->create(['name' => 'Member', 'password' => 'MemberPassword123']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $owner = User::factory()->create(['name' => 'Owner', 'password' => 'OwnerPassword123', 'tenant_id' => $tenant->id]);
+        $member = User::factory()->create(['name' => 'Member', 'password' => 'MemberPassword123', 'tenant_id' => $tenant->id]);
 
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $owner->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $member->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         $this->artisan('project:remove-member', [
@@ -394,13 +429,14 @@ class ArtisanCommandTest extends TestCase
 
     public function test_project_remove_last_owner_rejected(): void
     {
-        $project = Project::factory()->create();
-        $owner = User::factory()->create(['name' => 'SoleOwner', 'password' => 'SoleOwnerPassword123']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $owner = User::factory()->create(['name' => 'SoleOwner', 'password' => 'SoleOwnerPassword123', 'tenant_id' => $tenant->id]);
 
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $owner->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
 
         $this->artisan('project:remove-member', [
@@ -411,8 +447,9 @@ class ArtisanCommandTest extends TestCase
 
     public function test_project_remove_non_member(): void
     {
-        $project = Project::factory()->create();
-        User::factory()->create(['name' => 'Stranger', 'password' => 'StrangerPassword123']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        User::factory()->create(['name' => 'Stranger', 'password' => 'StrangerPassword123', 'tenant_id' => $tenant->id]);
 
         $this->artisan('project:remove-member', [
             'code' => $project->code,

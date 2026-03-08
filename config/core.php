@@ -67,24 +67,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Roles projet (table project_members)
+    | Positions projet (table project_members)
     |--------------------------------------------------------------------------
     */
-    'project_roles' => ['owner', 'member'],
+    'project_positions' => ['owner', 'member'],
 
     /*
     |--------------------------------------------------------------------------
-    | Role par defaut a l'ajout d'un membre
+    | Position par defaut a l'ajout d'un membre
     |--------------------------------------------------------------------------
     */
-    'default_project_role' => 'member',
+    'default_project_position' => 'member',
 
     /*
     |--------------------------------------------------------------------------
-    | Role du createur de projet (premiere fois qu'il devient membre)
+    | Position du createur de projet (premiere fois qu'il devient membre)
     |--------------------------------------------------------------------------
     */
-    'default_project_member_role' => 'owner',
+    'default_project_member_position' => 'owner',
 
     /*
     |--------------------------------------------------------------------------

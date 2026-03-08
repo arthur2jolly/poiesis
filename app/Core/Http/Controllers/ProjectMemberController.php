@@ -24,7 +24,7 @@ class ProjectMemberController extends Controller
             'data' => $members->map(fn (ProjectMember $m) => [
                 'id' => $m->id,
                 'user' => ['id' => $m->user->id, 'name' => $m->user->name],
-                'role' => $m->role,
+                'position' => $m->position,
                 'created_at' => $m->created_at,
             ]),
             'meta' => [
@@ -50,7 +50,7 @@ class ProjectMemberController extends Controller
 
         $validated = $request->validate([
             'user_id' => ['required', 'string', 'exists:users,id'],
-            'role' => ['required', 'string', 'in:'.implode(',', config('core.project_roles'))],
+            'position' => ['required', 'string', 'in:'.implode(',', config('core.project_positions'))],
         ]);
 
         $alreadyMember = ProjectMember::where('project_id', $project->id)
@@ -64,7 +64,7 @@ class ProjectMemberController extends Controller
         $member = ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $validated['user_id'],
-            'role' => $validated['role'],
+            'position' => $validated['position'],
         ]);
 
         $member->load('user:id,name');
@@ -72,7 +72,7 @@ class ProjectMemberController extends Controller
         return response()->json([
             'id' => $member->id,
             'user' => ['id' => $member->user->id, 'name' => $member->user->name],
-            'role' => $member->role,
+            'position' => $member->position,
             'created_at' => $member->created_at,
         ], 201);
     }
@@ -98,20 +98,20 @@ class ProjectMemberController extends Controller
         }
 
         $validated = $request->validate([
-            'role' => ['required', 'string', 'in:'.implode(',', config('core.project_roles'))],
+            'position' => ['required', 'string', 'in:'.implode(',', config('core.project_positions'))],
         ]);
 
-        if ($validated['role'] !== 'owner' && ProjectMember::isLastOwner($project->id, $member->user_id)) {
+        if ($validated['position'] !== 'owner' && ProjectMember::isLastOwner($project->id, $member->user_id)) {
             return response()->json(['message' => 'Cannot downgrade the last owner of the project.'], 422);
         }
 
-        $member->update(['role' => $validated['role']]);
+        $member->update(['position' => $validated['position']]);
         $member->load('user:id,name');
 
         return response()->json([
             'id' => $member->id,
             'user' => ['id' => $member->user->id, 'name' => $member->user->name],
-            'role' => $member->role,
+            'position' => $member->position,
             'created_at' => $member->created_at,
         ]);
     }
@@ -149,7 +149,7 @@ class ProjectMemberController extends Controller
     {
         return ProjectMember::where('project_id', $projectId)
             ->where('user_id', $userId)
-            ->where('role', 'owner')
+            ->where('position', 'owner')
             ->exists();
     }
 }
