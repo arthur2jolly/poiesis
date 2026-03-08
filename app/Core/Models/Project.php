@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string $code
  * @property string $titre
  * @property string|null $description
@@ -27,14 +29,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
-    use HasFactory, HasUuids;
+    use BelongsToTenant, HasFactory, HasUuids;
 
     protected static function newFactory(): ProjectFactory
     {
         return ProjectFactory::new();
     }
 
-    protected $fillable = ['code', 'titre', 'description', 'modules'];
+    protected $fillable = ['tenant_id', 'code', 'titre', 'description', 'modules'];
 
     protected $casts = [
         'modules' => 'array',
@@ -69,7 +71,7 @@ class Project extends Model
     {
         return $this->belongsToMany(User::class, 'project_members')
             ->using(ProjectMember::class)
-            ->withPivot('role', 'created_at');
+            ->withPivot('position', 'created_at');
     }
 
     public function members(): HasMany

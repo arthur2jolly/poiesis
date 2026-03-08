@@ -2,6 +2,7 @@
 
 namespace App\Core\Console\Commands;
 
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\TokenService;
 use Carbon\Carbon;
@@ -11,6 +12,7 @@ class TokenCreateCommand extends Command
 {
     protected $signature = 'token:create
         {user}
+        {--tenant= : Tenant slug}
         {--name=default}
         {--expires= : Duration like 30d, 6h, or never}';
 
@@ -23,7 +25,20 @@ class TokenCreateCommand extends Command
 
     public function handle(): int
     {
-        $user = User::where('name', $this->argument('user'))->first();
+        $tenantSlug = $this->option('tenant');
+        $query = User::withoutTenantScope()->where('name', $this->argument('user'));
+
+        if ($tenantSlug !== null) {
+            $tenant = Tenant::where('slug', $tenantSlug)->first();
+            if ($tenant === null) {
+                $this->error("Tenant not found: {$tenantSlug}");
+
+                return self::FAILURE;
+            }
+            $query->where('tenant_id', $tenant->id);
+        }
+
+        $user = $query->first();
 
         if ($user === null) {
             $this->error("User not found: {$this->argument('user')}");

@@ -14,7 +14,7 @@ class ConfigController extends Controller
             'priorities' => config('core.priorities'),
             'statuts' => config('core.statuts'),
             'work_natures' => config('core.work_natures'),
-            'project_roles' => config('core.project_roles'),
+            'project_positions' => config('core.project_positions'),
             'oauth_scopes' => config('core.oauth_scopes'),
         ]);
     }

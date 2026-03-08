@@ -8,6 +8,7 @@ use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\DependencyService;
 use Illuminate\Database\Seeder;
@@ -17,15 +18,17 @@ class DevSeeder extends Seeder
     public function run(): void
     {
         $depService = new DependencyService;
+        $tenant = Tenant::create(['slug' => 'acme', 'name' => 'Acme Corp', 'is_active' => true]);
 
         foreach (['DEMO' => 'Demo Project', 'TEST' => 'Test Project'] as $code => $titre) {
-            $owner = User::factory()->create(['name' => "{$code} Owner"]);
-            $member = User::factory()->create(['name' => "{$code} Member"]);
+            $owner = User::factory()->create(['name' => "{$code} Owner", 'tenant_id' => $tenant->id]);
+            $member = User::factory()->create(['name' => "{$code} Member", 'tenant_id' => $tenant->id]);
 
             // Generate a token for the owner
             $tokenData = ApiToken::generateRaw();
             ApiToken::create([
                 'user_id' => $owner->id,
+                'tenant_id' => $tenant->id,
                 'name' => 'default',
                 'token' => $tokenData['hash'],
             ]);
@@ -34,10 +37,11 @@ class DevSeeder extends Seeder
                 'code' => $code,
                 'titre' => $titre,
                 'description' => "Seed project for {$code}",
+                'tenant_id' => $tenant->id,
             ]);
 
-            ProjectMember::create(['project_id' => $project->id, 'user_id' => $owner->id, 'role' => 'owner']);
-            ProjectMember::create(['project_id' => $project->id, 'user_id' => $member->id, 'role' => 'member']);
+            ProjectMember::create(['project_id' => $project->id, 'user_id' => $owner->id, 'position' => 'owner']);
+            ProjectMember::create(['project_id' => $project->id, 'user_id' => $member->id, 'position' => 'member']);
 
             $allStories = [];
 

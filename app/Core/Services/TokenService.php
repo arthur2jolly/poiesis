@@ -19,6 +19,7 @@ class TokenService
         $apiToken = $user->apiTokens()->create([
             'name' => $name,
             'token' => $generated['hash'],
+            'tenant_id' => $user->tenant_id,
             'expires_at' => $expiresAt,
         ]);
 

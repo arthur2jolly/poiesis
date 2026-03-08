@@ -5,6 +5,7 @@ namespace Tests\Feature\Core\Console;
 use App\Core\Models\ApiToken;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,11 +14,19 @@ class ArtisanCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Tenant $tenant;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tenant = Tenant::factory()->create(['slug' => 'test-tenant']);
+    }
+
     // ── user:create ──────────────────────────────────────────
 
     public function test_user_create_creates_user_and_token(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'Alice')
             ->expectsQuestion('Password', 'SecurePassword123')
             ->expectsConfirmation('Generate a token now?', 'yes')
@@ -33,7 +42,7 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_without_token(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'Bob')
             ->expectsQuestion('Password', 'AnotherPassword456')
             ->expectsConfirmation('Generate a token now?', 'no')
@@ -48,7 +57,7 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_stores_hash_not_raw(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'Carol')
             ->expectsQuestion('Password', 'HashedPassword789')
             ->expectsConfirmation('Generate a token now?', 'yes')
@@ -61,9 +70,15 @@ class ArtisanCommandTest extends TestCase
         $this->assertStringNotContainsString('aa-', $token->token);
     }
 
-    public function test_user_create_requires_password(): void
+    public function test_user_create_requires_tenant(): void
     {
         $this->artisan('user:create')
+            ->assertFailed();
+    }
+
+    public function test_user_create_requires_password(): void
+    {
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'NoPwd')
             ->expectsQuestion('Password', '')
             ->assertFailed();
@@ -71,7 +86,7 @@ class ArtisanCommandTest extends TestCase
 
     public function test_user_create_password_too_short(): void
     {
-        $this->artisan('user:create')
+        $this->artisan('user:create', ['--tenant' => 'test-tenant'])
             ->expectsQuestion('Username', 'ShortPwd')
             ->expectsQuestion('Password', 'Short1')
             ->assertFailed();

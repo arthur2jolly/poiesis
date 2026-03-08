@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,7 @@ use Illuminate\Support\Collection;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string $project_id
  * @property string $identifier
  * @property int $sequence_number
@@ -22,10 +24,10 @@ use Illuminate\Support\Collection;
  */
 class Artifact extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
     protected $fillable = [
-        'project_id', 'identifier', 'sequence_number',
+        'tenant_id', 'project_id', 'identifier', 'sequence_number',
         'artifactable_id', 'artifactable_type',
     ];
 
@@ -45,7 +47,8 @@ class Artifact extends Model
 
     public static function resolveIdentifier(string $identifier): ?Model
     {
-        $artifact = static::where('identifier', $identifier)
+        $artifact = static::withoutTenantScope()
+            ->where('identifier', $identifier)
             ->with('artifactable')
             ->first();
 

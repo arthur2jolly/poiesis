@@ -113,7 +113,7 @@ class ModuleController extends Controller
     {
         return ProjectMember::where('project_id', $projectId)
             ->where('user_id', $userId)
-            ->where('role', 'owner')
+            ->where('position', 'owner')
             ->exists();
     }
 }

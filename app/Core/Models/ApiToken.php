@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string $user_id
  * @property string $name
  * @property string $token
@@ -19,9 +21,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ApiToken extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
-    protected $fillable = ['user_id', 'name', 'token', 'expires_at'];
+    protected $fillable = ['tenant_id', 'user_id', 'name', 'token', 'expires_at'];
 
     public const UPDATED_AT = null;
 

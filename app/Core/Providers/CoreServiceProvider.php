@@ -5,7 +5,14 @@ namespace App\Core\Providers;
 use App\Core\Console\Commands\ProjectAddMemberCommand;
 use App\Core\Console\Commands\ProjectMembersCommand;
 use App\Core\Console\Commands\ProjectRemoveMemberCommand;
+use App\Core\Console\Commands\ProjectUpdateMemberCommand;
 use App\Core\Console\Commands\RoleSeedCommand;
+use App\Core\Console\Commands\SuperadminCreateCommand;
+use App\Core\Console\Commands\TenantCreateCommand;
+use App\Core\Console\Commands\TenantDeleteCommand;
+use App\Core\Console\Commands\TenantDisableCommand;
+use App\Core\Console\Commands\TenantEnableCommand;
+use App\Core\Console\Commands\TenantListCommand;
 use App\Core\Console\Commands\TokenCreateCommand;
 use App\Core\Console\Commands\TokenListCommand;
 use App\Core\Console\Commands\TokenRevokeCommand;
@@ -16,6 +23,7 @@ use App\Core\Console\Commands\UserUpdateCommand;
 use App\Core\Http\Middleware\AuthenticateBearer;
 use App\Core\Http\Middleware\EnsureModuleActive;
 use App\Core\Http\Middleware\EnsureProjectAccess;
+use App\Core\Http\Middleware\EnsureTenantActive;
 use App\Core\Mcp\Prompts\AgileWorkflowPrompt;
 use App\Core\Mcp\Resources\ProjectConfigResource;
 use App\Core\Mcp\Resources\ProjectOverviewResource;
@@ -24,12 +32,16 @@ use App\Core\Mcp\Server\McpTransport;
 use App\Core\Mcp\Tools\ArtifactTools;
 use App\Core\Mcp\Tools\DependencyTools;
 use App\Core\Mcp\Tools\EpicTools;
+use App\Core\Mcp\Tools\MemberTools;
 use App\Core\Mcp\Tools\ModuleTools;
 use App\Core\Mcp\Tools\ProjectTools;
 use App\Core\Mcp\Tools\StoryTools;
 use App\Core\Mcp\Tools\TaskTools;
+use App\Core\Mcp\Tools\TokenTools;
 use App\Core\Module\ModuleRegistry;
 use App\Core\Services\DependencyService;
+use App\Core\Services\TenantManager;
+use App\Core\Services\TokenService;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 
@@ -45,6 +57,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(McpServer::class);
         $this->app->singleton(McpTransport::class);
         $this->app->singleton(DependencyService::class);
+        $this->app->singleton(TenantManager::class);
     }
 
     public function boot(): void
@@ -54,6 +67,7 @@ class CoreServiceProvider extends ServiceProvider
         $router->aliasMiddleware('auth.bearer', AuthenticateBearer::class);
         $router->aliasMiddleware('project.access', EnsureProjectAccess::class);
         $router->aliasMiddleware('module.active', EnsureModuleActive::class);
+        $router->aliasMiddleware('tenant.active', EnsureTenantActive::class);
 
         $this->loadRoutesFrom(__DIR__.'/../Routes/api.php');
         $this->loadRoutesFrom(__DIR__.'/../Routes/mcp.php');
@@ -75,6 +89,7 @@ class CoreServiceProvider extends ServiceProvider
         $server = $this->app->make(McpServer::class);
 
         $server->registerCoreTools(new ProjectTools);
+        $server->registerCoreTools(new MemberTools);
         $server->registerCoreTools(new EpicTools);
         $server->registerCoreTools(new StoryTools);
         $server->registerCoreTools(new TaskTools);
@@ -84,6 +99,9 @@ class CoreServiceProvider extends ServiceProvider
         ));
         $server->registerCoreTools(new DependencyTools(
             $this->app->make(DependencyService::class)
+        ));
+        $server->registerCoreTools(new TokenTools(
+            $this->app->make(TokenService::class)
         ));
     }
 
@@ -117,8 +135,15 @@ class CoreServiceProvider extends ServiceProvider
             TokenRevokeCommand::class,
             ProjectMembersCommand::class,
             ProjectAddMemberCommand::class,
+            ProjectUpdateMemberCommand::class,
             ProjectRemoveMemberCommand::class,
             RoleSeedCommand::class,
+            TenantCreateCommand::class,
+            TenantListCommand::class,
+            TenantDisableCommand::class,
+            TenantEnableCommand::class,
+            TenantDeleteCommand::class,
+            SuperadminCreateCommand::class,
         ];
     }
 }

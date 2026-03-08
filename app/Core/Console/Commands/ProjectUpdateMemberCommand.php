@@ -7,11 +7,11 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\User;
 use Illuminate\Console\Command;
 
-class ProjectAddMemberCommand extends Command
+class ProjectUpdateMemberCommand extends Command
 {
-    protected $signature = 'project:add-member {code} {user} {--position=member} {--policy=}';
+    protected $signature = 'project:update-member {code} {user} {--policy=} {--position=}';
 
-    protected $description = 'Add a user to a project';
+    protected $description = 'Update a project member\'s role or policy';
 
     public function handle(): int
     {
@@ -31,28 +31,26 @@ class ProjectAddMemberCommand extends Command
             return self::FAILURE;
         }
 
-        $position = $this->option('position');
-        $validPositions = config('core.project_positions');
-
-        if (! in_array($position, $validPositions, true)) {
-            $this->error("Invalid position \"{$position}\". Valid positions: ".implode(', ', $validPositions));
-
-            return self::FAILURE;
-        }
-
-        $exists = ProjectMember::where('project_id', $project->id)
+        $membership = ProjectMember::where('project_id', $project->id)
             ->where('user_id', $user->id)
-            ->exists();
+            ->first();
 
-        if ($exists) {
-            $this->error("\"{$user->name}\" is already a member of project \"{$project->code}\".");
+        if ($membership === null) {
+            $this->error("\"{$user->name}\" is not a member of project \"{$project->code}\".");
 
             return self::FAILURE;
         }
 
         $policy = $this->option('policy');
+        $position = $this->option('position');
 
-        if ($policy !== null && $policy !== '') {
+        if ($policy === null && $position === null) {
+            $this->error('Provide at least --policy or --position.');
+
+            return self::FAILURE;
+        }
+
+        if ($policy !== null) {
             $validPolicies = array_change_key_case(config('core.user_roles_int'), CASE_LOWER);
             $policyInt = $validPolicies[strtolower($policy)] ?? null;
 
@@ -66,15 +64,20 @@ class ProjectAddMemberCommand extends Command
             $user->save();
         }
 
-        ProjectMember::create([
-            'project_id' => $project->id,
-            'user_id' => $user->id,
-            'position' => $position,
-        ]);
+        if ($position !== null) {
+            $validPositions = config('core.project_positions');
 
-        $msg = "Added \"{$user->name}\" to \"{$project->code}\" as {$position}";
-        $msg .= $policy ? " with policy {$policy}." : '.';
-        $this->info($msg);
+            if (! in_array($position, $validPositions, true)) {
+                $this->error("Invalid position \"{$position}\". Valid positions: ".implode(', ', $validPositions));
+
+                return self::FAILURE;
+            }
+
+            $membership->position = $position;
+            $membership->save();
+        }
+
+        $this->info("Updated \"{$user->name}\" in \"{$project->code}\".");
 
         return self::SUCCESS;
     }

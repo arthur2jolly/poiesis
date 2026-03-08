@@ -17,7 +17,8 @@
 - **Unified Status Lifecycle**: `draft` → `open` → `closed` (with re-open)
 - **Dependency Tracking**: Declare dependencies between artifacts; check blockers before opening work
 - **Module System**: Extend platform capabilities with pluggable modules
-- **Multi-user Collaboration**: Role-based access control (owner, member)
+- **Multi-tenancy (SaaS)**: Row-level tenant isolation with automatic Global Scope — transparent to API consumers
+- **Multi-user Collaboration**: Two-tier access control — global user roles and per-project membership roles
 - **RESTful API**: HTTP-based project management endpoints
 - **MCP Server**: Native MCP 2.0 integration for AI agent control
 
@@ -39,8 +40,7 @@ The MCP server exposes:
 
 - PHP 8.4+
 - Laravel 12
-- MariaDB 11.8+
-- Docker (optional, for containerized deployment)
+- MariaDB 11.8+ (or any compatible database)
 
 ### Quick Start
 
@@ -564,20 +564,114 @@ resources/mcp/agile-workflow.md
 ### Linting (PSR-12)
 
 ```bash
-php artisan pint              # Fix issues
-php artisan pint --check      # Check without fixing
+./vendor/bin/pint              # Fix issues
+./vendor/bin/pint --test       # Check without fixing
 ```
 
 ### Static Analysis (PHPStan Level 8)
 
 ```bash
-php artisan stan
+./vendor/bin/phpstan analyse --no-progress
 ```
 
 ### Testing (Pest)
 
 ```bash
-php artisan test
+./vendor/bin/pest
+```
+
+---
+
+## Multi-tenancy
+
+Poiesis supports **row-level multi-tenancy** for SaaS deployments. Each tenant has isolated users, projects, tokens, and artifacts.
+
+### How it works
+
+- A `BelongsToTenant` trait applies a **Global Scope** on all tenant-aware models (User, Project, ApiToken, OAuthClient, OAuthAccessToken, OAuthAuthorizationCode, Artifact)
+- The tenant is resolved from the Bearer token in `AuthenticateBearer` middleware and stored in a `TenantManager` singleton
+- All queries are automatically scoped — no code changes needed in controllers or MCP tools
+- CLI commands use `withoutTenantScope()` to operate across tenants
+
+### Tenant Management
+
+```bash
+# Create a tenant (optionally create an owner user)
+php artisan tenant:create "Acme Corp" --slug=acme
+
+# List all tenants
+php artisan tenant:list
+
+# Enable / disable a tenant
+php artisan tenant:enable acme
+php artisan tenant:disable acme
+
+# Delete a tenant and ALL its data (cascading)
+php artisan tenant:delete acme
+
+# Assign orphan rows (tenant_id=null) to a tenant
+php artisan tenant:assign-default acme
+
+# Create a superadmin (separate from tenant users)
+php artisan superadmin:create --name=admin --password=secret123
+```
+
+### User & Token with Tenant
+
+```bash
+# Create a user in a specific tenant
+php artisan user:create --tenant=acme --role=1
+
+# Create a token for a user in a specific tenant
+php artisan token:create john --tenant=acme --name=agent
+```
+
+---
+
+## Access Control
+
+Poiesis uses two independent role systems that work together.
+
+### Global User Role
+
+Assigned at user creation, controls what operations the user can perform across the entire platform (MCP tools, REST API):
+
+| `--role` | Name | Create/edit artifacts | Manage projects | Manage users |
+| --- | --- | --- | --- | --- |
+| `1` | `administrator` | yes | yes | yes |
+| `2` | `manager` | yes | yes | no |
+| `3` | `developer` | yes | no | no |
+| `4` | `viewer` (default) | no | no | no |
+
+```bash
+php artisan user:create --role=2   # creates a manager
+```
+
+### Project Membership Role
+
+Assigned per project, controls project-level administration:
+
+| `--role` | Permissions |
+| --- | --- |
+| `owner` | delete project, manage members, activate/deactivate modules |
+| `member` (default) | read/write access within the limits of the global role |
+
+A user must have **both** an appropriate global role (to act on artifacts) **and** be a member of the project (to access it).
+
+```bash
+# Add a user to a project (project role: member, global role unchanged)
+php artisan project:add-member PROJ claude.dev
+
+# Add and set global role at the same time
+php artisan project:add-member PROJ claude.manager --role=owner --policy=manager
+
+# Update an existing member
+php artisan project:update-member PROJ claude.dev --policy=developer
+php artisan project:update-member PROJ claude.dev --role=owner
+
+# List / remove
+php artisan project:members PROJ
+php artisan project:remove-member PROJ claude.dev
 ```
 
 ---
@@ -593,13 +687,13 @@ php artisan migrate:fresh --seed --seeder=DevSeeder
 ### Create a User
 
 ```bash
-php artisan artisan:user:create
+php artisan user:create [--tenant=acme] [--role=4]
 ```
 
 ### Generate MCP Token
 
 ```bash
-php artisan artisan:token:create --name="Agent Name" --user-id=1
+php artisan token:create <username> [--tenant=acme] [--name=default] [--expires=30d]
 ```
 
 ---

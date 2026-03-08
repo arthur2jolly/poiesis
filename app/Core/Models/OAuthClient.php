@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
+ * @property string $tenant_id
  * @property string|null $user_id
  * @property string $name
  * @property string $client_id
@@ -24,12 +26,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class OAuthClient extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
     protected $table = 'oauth_clients';
 
     protected $fillable = [
-        'user_id', 'name', 'client_id', 'client_secret',
+        'tenant_id', 'user_id', 'name', 'client_id', 'client_secret',
         'redirect_uris', 'grant_types', 'scopes',
     ];
 

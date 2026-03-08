@@ -757,11 +757,13 @@ describe('CL17: User without project access gets 403', function (): void {
 describe('CL18: Dynamic client registration', function (): void {
 
     it('creates a new OAuth client via the registration endpoint', function (): void {
+        $tenant = createTenant();
         $this->postJson('/oauth/register', [
             'client_name' => 'CL18 Test App',
             'redirect_uris' => ['https://app.example.com/callback'],
             'grant_types' => ['authorization_code'],
             'scope' => 'projects:read projects:write',
+            'tenant_slug' => $tenant->slug,
         ])->assertStatus(201)
             ->assertJsonStructure(['client_id', 'client_name', 'redirect_uris', 'grant_types']);
 
@@ -769,15 +771,19 @@ describe('CL18: Dynamic client registration', function (): void {
     });
 
     it('rejects registration without redirect_uris', function (): void {
+        $tenant = createTenant();
         $this->postJson('/oauth/register', [
             'client_name' => 'Missing URIs',
+            'tenant_slug' => $tenant->slug,
         ])->assertStatus(422);
     });
 
     it('rejects registration with invalid redirect URIs', function (): void {
+        $tenant = createTenant();
         $this->postJson('/oauth/register', [
             'client_name' => 'Bad URI App',
             'redirect_uris' => ['not-a-valid-url'],
+            'tenant_slug' => $tenant->slug,
         ])->assertStatus(422);
     });
 

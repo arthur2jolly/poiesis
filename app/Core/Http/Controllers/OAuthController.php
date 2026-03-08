@@ -6,6 +6,7 @@ use App\Core\Models\OAuthAccessToken;
 use App\Core\Models\OAuthAuthorizationCode;
 use App\Core\Models\OAuthClient;
 use App\Core\Models\OAuthRefreshToken;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +45,10 @@ class OAuthController extends Controller
             'grant_types' => 'sometimes|array',
             'grant_types.*' => 'string',
             'scope' => 'sometimes|nullable|string',
+            'tenant_slug' => 'required|string|exists:tenants,slug',
         ]);
+
+        $tenant = Tenant::where('slug', $validated['tenant_slug'])->firstOrFail();
 
         $clientId = (string) Str::uuid7();
         $grantTypes = $validated['grant_types'] ?? ['authorization_code'];
@@ -59,6 +63,7 @@ class OAuthController extends Controller
             'redirect_uris' => $validated['redirect_uris'],
             'grant_types' => $grantTypes,
             'scopes' => $scopes,
+            'tenant_id' => $tenant->id,
         ]);
 
         return response()->json([
@@ -201,6 +206,7 @@ class OAuthController extends Controller
         OAuthAuthorizationCode::create([
             'oauth_client_id' => $client->id,
             'user_id' => $user->id,
+            'tenant_id' => $client->tenant_id,
             'code' => $hashedCode,
             'redirect_uri' => $validated['redirect_uri'],
             'scopes' => ! empty($scopes) ? $scopes : null,
@@ -280,6 +286,7 @@ class OAuthController extends Controller
         $accessToken = OAuthAccessToken::create([
             'oauth_client_id' => $client->id,
             'user_id' => $authCode->user_id,
+            'tenant_id' => $client->tenant_id,
             'token' => hash('sha256', $rawAccessToken),
             'scopes' => $authCode->scopes,
             'expires_at' => Carbon::now()->addMinutes($accessTokenTtl),
@@ -345,6 +352,7 @@ class OAuthController extends Controller
         $newAccessToken = OAuthAccessToken::create([
             'oauth_client_id' => $client->id,
             'user_id' => $oldAccessToken->user_id,
+            'tenant_id' => $client->tenant_id,
             'token' => hash('sha256', $rawAccessToken),
             'scopes' => $oldAccessToken->scopes,
             'expires_at' => Carbon::now()->addMinutes($accessTokenTtl),

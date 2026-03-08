@@ -1,3 +1,6 @@
+# Documentation (local only)
+/docs
+
 # Dependencies
 /vendor
 /node_modules

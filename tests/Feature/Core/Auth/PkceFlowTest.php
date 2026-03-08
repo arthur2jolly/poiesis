@@ -4,6 +4,7 @@ namespace Tests\Feature\Core\Auth;
 
 use App\Core\Models\OAuthAuthorizationCode;
 use App\Core\Models\OAuthClient;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,14 +14,23 @@ class PkceFlowTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Tenant $tenant;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->tenant = Tenant::factory()->create();
+    }
+
     private function createClientAndUser(): array
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $client = OAuthClient::create([
             'name' => 'PKCE Test Client',
             'client_id' => 'pkce-client-id',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $this->tenant->id,
         ]);
 
         return ['user' => $user, 'client' => $client];
@@ -48,6 +58,7 @@ class PkceFlowTest extends TestCase
             'code_challenge' => $challenge,
             'code_challenge_method' => 'S256',
             'expires_at' => $expiresAt ?? Carbon::now()->addMinutes(10),
+            'tenant_id' => $this->tenant->id,
         ]);
 
         return ['raw' => $rawCode, 'hash' => $hashedCode];

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string $id
  * @property string $project_id
  * @property string $user_id
- * @property string $role
+ * @property string $position
  * @property \Carbon\Carbon|null $created_at
  * @property-read \App\Core\Models\Project $project
  * @property-read \App\Core\Models\User $user
@@ -23,7 +23,7 @@ class ProjectMember extends Pivot
 
     public $incrementing = false;
 
-    protected $fillable = ['project_id', 'user_id', 'role'];
+    protected $fillable = ['project_id', 'user_id', 'position'];
 
     protected $casts = [
         'created_at' => 'datetime',
@@ -44,7 +44,7 @@ class ProjectMember extends Pivot
     public static function isLastOwner(string $projectId, string $userId): bool
     {
         $ownerCount = static::where('project_id', $projectId)
-            ->where('role', 'owner')
+            ->where('position', 'owner')
             ->count();
 
         if ($ownerCount > 1) {
@@ -53,7 +53,7 @@ class ProjectMember extends Pivot
 
         return static::where('project_id', $projectId)
             ->where('user_id', $userId)
-            ->where('role', 'owner')
+            ->where('position', 'owner')
             ->exists();
     }
 }

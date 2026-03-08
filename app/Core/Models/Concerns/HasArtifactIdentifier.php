@@ -25,6 +25,7 @@ trait HasArtifactIdentifier
 
                 Artifact::create([
                     'project_id' => $projectId,
+                    'tenant_id' => $model->getTenantIdForArtifact(),
                     'identifier' => $identifier,
                     'sequence_number' => $nextSequence,
                     'artifactable_id' => $model->id,
@@ -73,6 +74,14 @@ trait HasArtifactIdentifier
         }
 
         throw new \RuntimeException('Cannot resolve project_id for artifact generation.');
+    }
+
+    protected function getTenantIdForArtifact(): string
+    {
+        $projectId = $this->getProjectIdForArtifact();
+
+        /** @var string */
+        return Project::withoutGlobalScope('tenant')->where('id', $projectId)->value('tenant_id');
     }
 
     protected function getProjectCodeForArtifact(): string
