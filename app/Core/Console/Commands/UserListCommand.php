@@ -34,7 +34,7 @@ class UserListCommand extends Command
             $users->map(fn (User $u) => [
                 $u->id,
                 $u->name,
-                $u->tenant?->slug ?? '—',
+                $u->tenant->slug ?? '—',
                 $u->api_tokens_count,
                 $u->projects_count,
                 $u->created_at->toDateTimeString(),
