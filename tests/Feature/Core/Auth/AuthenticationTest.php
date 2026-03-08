@@ -18,25 +18,29 @@ class AuthenticationTest extends TestCase
 
     private function createUserWithToken(?Carbon $expiresAt = null): array
     {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $token = $user->apiTokens()->create([
             'name' => 'test-token',
             'token' => $raw['hash'],
             'expires_at' => $expiresAt,
+            'tenant_id' => $tenant->id,
         ]);
 
-        return ['user' => $user, 'raw' => $raw['raw'], 'token' => $token];
+        return ['user' => $user, 'raw' => $raw['raw'], 'token' => $token, 'tenant' => $tenant];
     }
 
     private function createUserWithOAuthToken(?Carbon $expiresAt = null): array
     {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $client = OAuthClient::create([
             'name' => 'Test Client',
             'client_id' => 'test-client-id',
             'redirect_uris' => ['http://localhost/callback'],
             'grant_types' => ['authorization_code'],
+            'tenant_id' => $tenant->id,
         ]);
         $raw = 'aa-'.bin2hex(random_bytes(20));
         $accessToken = OAuthAccessToken::create([
@@ -45,9 +49,10 @@ class AuthenticationTest extends TestCase
             'token' => hash('sha256', $raw),
             'scopes' => ['projects:read'],
             'expires_at' => $expiresAt ?? Carbon::now()->addHour(),
+            'tenant_id' => $tenant->id,
         ]);
 
-        return ['user' => $user, 'raw' => $raw, 'accessToken' => $accessToken];
+        return ['user' => $user, 'raw' => $raw, 'accessToken' => $accessToken, 'tenant' => $tenant];
     }
 
     // -- AuthenticateBearer tests --
@@ -118,8 +123,8 @@ class AuthenticationTest extends TestCase
     public function test_project_access_with_membership_passes(): void
     {
         $data = $this->createUserWithToken();
-        $project = Project::factory()->create();
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $data['user']->id, 'role' => 'member']);
+        $project = Project::factory()->create(['tenant_id' => $data['tenant']->id]);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $data['user']->id, 'position' => 'member']);
 
         $response = $this->getJson("/api/v1/projects/{$project->code}/access-check", [
             'Authorization' => 'Bearer '.$data['raw'],
@@ -131,7 +136,7 @@ class AuthenticationTest extends TestCase
     public function test_project_access_without_membership_returns_403(): void
     {
         $data = $this->createUserWithToken();
-        $project = Project::factory()->create();
+        $project = Project::factory()->create(['tenant_id' => $data['tenant']->id]);
 
         $response = $this->getJson("/api/v1/projects/{$project->code}/access-check", [
             'Authorization' => 'Bearer '.$data['raw'],
@@ -145,8 +150,8 @@ class AuthenticationTest extends TestCase
     public function test_module_active_passes_when_module_is_active(): void
     {
         $data = $this->createUserWithToken();
-        $project = Project::factory()->create(['modules' => ['sprint']]);
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $data['user']->id, 'role' => 'member']);
+        $project = Project::factory()->create(['modules' => ['sprint'], 'tenant_id' => $data['tenant']->id]);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $data['user']->id, 'position' => 'member']);
 
         $response = $this->getJson("/api/v1/projects/{$project->code}/module-check/sprint", [
             'Authorization' => 'Bearer '.$data['raw'],
@@ -159,8 +164,8 @@ class AuthenticationTest extends TestCase
     public function test_module_active_fails_when_module_is_inactive(): void
     {
         $data = $this->createUserWithToken();
-        $project = Project::factory()->create(['modules' => []]);
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $data['user']->id, 'role' => 'member']);
+        $project = Project::factory()->create(['modules' => [], 'tenant_id' => $data['tenant']->id]);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $data['user']->id, 'position' => 'member']);
 
         $response = $this->getJson("/api/v1/projects/{$project->code}/module-check/sprint", [
             'Authorization' => 'Bearer '.$data['raw'],

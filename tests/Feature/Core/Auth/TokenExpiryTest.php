@@ -14,12 +14,14 @@ class TokenExpiryTest extends TestCase
 
     private function createUserWithToken(?Carbon $expiresAt = null): array
     {
-        $user = User::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $raw = ApiToken::generateRaw();
         $token = $user->apiTokens()->create([
             'name' => 'test-token',
             'token' => $raw['hash'],
             'expires_at' => $expiresAt,
+            'tenant_id' => $tenant->id,
         ]);
 
         return ['user' => $user, 'raw' => $raw['raw'], 'token' => $token];

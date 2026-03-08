@@ -21,14 +21,16 @@ class ProjectTest extends TestCase
 
     public function test_modules_cast_to_array(): void
     {
-        $project = Project::factory()->create(['modules' => ['sprint', 'comments']]);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['modules' => ['sprint', 'comments'], 'tenant_id' => $tenant->id]);
         $this->assertIsArray($project->modules);
         $this->assertEquals(['sprint', 'comments'], $project->modules);
     }
 
     public function test_has_many_epics(): void
     {
-        $project = Project::factory()->create();
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
         Epic::factory()->create(['project_id' => $project->id]);
 
         $this->assertCount(1, $project->epics);
@@ -36,7 +38,8 @@ class ProjectTest extends TestCase
 
     public function test_has_many_standalone_tasks(): void
     {
-        $project = Project::factory()->create();
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
         $story = \App\Core\Models\Story::factory()->create(['epic_id' => $epic->id]);
 
@@ -49,11 +52,12 @@ class ProjectTest extends TestCase
 
     public function test_accessible_by_scope(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create();
-        $other = Project::factory()->create();
+        $tenant = createTenant();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $other = Project::factory()->create(['tenant_id' => $tenant->id]);
 
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $user->id, 'role' => 'member']);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $user->id, 'position' => 'member']);
 
         $accessible = Project::accessibleBy($user)->get();
         $this->assertCount(1, $accessible);
@@ -62,11 +66,12 @@ class ProjectTest extends TestCase
 
     public function test_belongs_to_many_users(): void
     {
-        $project = Project::factory()->create();
-        $user = User::factory()->create();
-        ProjectMember::create(['project_id' => $project->id, 'user_id' => $user->id, 'role' => 'owner']);
+        $tenant = createTenant();
+        $project = Project::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        ProjectMember::create(['project_id' => $project->id, 'user_id' => $user->id, 'position' => 'owner']);
 
         $this->assertCount(1, $project->users);
-        $this->assertEquals('owner', $project->users->first()->pivot->role);
+        $this->assertEquals('owner', $project->users->first()->pivot->position);
     }
 }

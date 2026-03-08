@@ -3,7 +3,6 @@
 namespace Tests\Feature\Core\Api;
 
 use App\Core\Models\ApiToken;
-use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
 use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,31 +12,9 @@ class ModuleAndConfigTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createAuth(): array
-    {
-        $user = User::factory()->create();
-        $raw = ApiToken::generateRaw();
-        $user->apiTokens()->create(['name' => 'test', 'token' => $raw['hash']]);
-
-        return ['user' => $user, 'token' => $raw['raw']];
-    }
-
-    private function setupProject(): array
-    {
-        $auth = $this->createAuth();
-        $project = Project::factory()->create(['modules' => []]);
-        ProjectMember::create([
-            'project_id' => $project->id,
-            'user_id' => $auth['user']->id,
-            'role' => 'owner',
-        ]);
-
-        return array_merge($auth, ['project' => $project]);
-    }
-
     private function headers(string $token): array
     {
-        return ['Authorization' => 'Bearer '.$token];
+        return authHeader($token);
     }
 
     // -- Config endpoint --
@@ -48,7 +25,7 @@ class ModuleAndConfigTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
-            'item_types', 'priorities', 'statuts', 'work_natures', 'project_roles', 'oauth_scopes',
+            'item_types', 'priorities', 'statuts', 'work_natures', 'project_positions', 'oauth_scopes',
         ]);
         $response->assertJsonFragment(['item_types' => config('core.item_types')]);
     }
@@ -63,9 +40,10 @@ class ModuleAndConfigTest extends TestCase
 
     public function test_list_available_modules(): void
     {
-        $data = $this->setupProject();
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
 
-        $response = $this->getJson('/api/v1/modules', $this->headers($data['token']));
+        $response = $this->getJson('/api/v1/modules', $this->headers($auth['token']));
 
         $response->assertStatus(200);
         $response->assertJsonStructure(['data']);
@@ -73,12 +51,13 @@ class ModuleAndConfigTest extends TestCase
 
     public function test_list_active_modules_for_project(): void
     {
-        $data = $this->setupProject();
-        $data['project']->update(['modules' => ['sprint', 'comments']]);
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
+        $project->update(['modules' => ['sprint', 'comments']]);
 
         $response = $this->getJson(
-            "/api/v1/projects/{$data['project']->code}/modules",
-            $this->headers($data['token'])
+            "/api/v1/projects/{$project->code}/modules",
+            $this->headers($auth['token'])
         );
 
         $response->assertStatus(200);
@@ -89,12 +68,13 @@ class ModuleAndConfigTest extends TestCase
 
     public function test_activate_unregistered_module_fails(): void
     {
-        $data = $this->setupProject();
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
 
         $response = $this->postJson(
-            "/api/v1/projects/{$data['project']->code}/modules",
+            "/api/v1/projects/{$project->code}/modules",
             ['slug' => 'nonexistent'],
-            $this->headers($data['token'])
+            $this->headers($auth['token'])
         );
 
         $response->assertStatus(422);
@@ -103,13 +83,14 @@ class ModuleAndConfigTest extends TestCase
     public function test_activate_already_active_module_fails(): void
     {
         config(['modules' => ['sprint' => 'App\\Modules\\Sprint\\SprintModule']]);
-        $data = $this->setupProject();
-        $data['project']->update(['modules' => ['sprint']]);
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
+        $project->update(['modules' => ['sprint']]);
 
         $response = $this->postJson(
-            "/api/v1/projects/{$data['project']->code}/modules",
+            "/api/v1/projects/{$project->code}/modules",
             ['slug' => 'sprint'],
-            $this->headers($data['token'])
+            $this->headers($auth['token'])
         );
 
         $response->assertStatus(422);
@@ -119,28 +100,30 @@ class ModuleAndConfigTest extends TestCase
 
     public function test_deactivate_module_success(): void
     {
-        $data = $this->setupProject();
-        $data['project']->update(['modules' => ['sprint']]);
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
+        $project->update(['modules' => ['sprint']]);
 
         $response = $this->deleteJson(
-            "/api/v1/projects/{$data['project']->code}/modules/sprint",
+            "/api/v1/projects/{$project->code}/modules/sprint",
             [],
-            $this->headers($data['token'])
+            $this->headers($auth['token'])
         );
 
         $response->assertStatus(204);
-        $data['project']->refresh();
-        $this->assertNotContains('sprint', $data['project']->modules);
+        $project->refresh();
+        $this->assertNotContains('sprint', $project->modules);
     }
 
     public function test_deactivate_inactive_module_returns_404(): void
     {
-        $data = $this->setupProject();
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
 
         $response = $this->deleteJson(
-            "/api/v1/projects/{$data['project']->code}/modules/sprint",
+            "/api/v1/projects/{$project->code}/modules/sprint",
             [],
-            $this->headers($data['token'])
+            $this->headers($auth['token'])
         );
 
         $response->assertStatus(404);
@@ -150,23 +133,24 @@ class ModuleAndConfigTest extends TestCase
 
     public function test_data_retained_after_module_deactivation(): void
     {
-        $data = $this->setupProject();
-        $data['project']->update(['modules' => ['sprint']]);
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
+        $project->update(['modules' => ['sprint']]);
 
         $this->postJson(
-            "/api/v1/projects/{$data['project']->code}/epics",
+            "/api/v1/projects/{$project->code}/epics",
             ['titre' => 'Test Epic'],
-            $this->headers($data['token'])
+            $this->headers($auth['token'])
         )->assertStatus(201);
 
         $this->deleteJson(
-            "/api/v1/projects/{$data['project']->code}/modules/sprint",
+            "/api/v1/projects/{$project->code}/modules/sprint",
             [],
-            $this->headers($data['token'])
+            $this->headers($auth['token'])
         );
 
         $this->assertDatabaseHas('epics', [
-            'project_id' => $data['project']->id,
+            'project_id' => $project->id,
             'titre' => 'Test Epic',
         ]);
     }
@@ -176,19 +160,20 @@ class ModuleAndConfigTest extends TestCase
     public function test_only_owners_can_activate_modules(): void
     {
         config(['modules' => ['sprint' => 'App\\Modules\\Sprint\\SprintModule']]);
-        $data = $this->setupProject();
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
 
-        $member = User::factory()->create();
+        $member = User::factory()->create(['tenant_id' => $auth['tenant']->id]);
         $memberRaw = ApiToken::generateRaw();
-        $member->apiTokens()->create(['name' => 'test', 'token' => $memberRaw['hash']]);
+        $member->apiTokens()->create(['name' => 'test', 'token' => $memberRaw['hash'], 'tenant_id' => $auth['tenant']->id]);
         ProjectMember::create([
-            'project_id' => $data['project']->id,
+            'project_id' => $project->id,
             'user_id' => $member->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         $response = $this->postJson(
-            "/api/v1/projects/{$data['project']->code}/modules",
+            "/api/v1/projects/{$project->code}/modules",
             ['slug' => 'sprint'],
             $this->headers($memberRaw['raw'])
         );
@@ -200,11 +185,12 @@ class ModuleAndConfigTest extends TestCase
 
     public function test_pagination_beyond_results_returns_empty_data(): void
     {
-        $data = $this->setupProject();
+        $auth = createAuth();
+        $project = setupProject($auth, ['modules' => []]);
 
         $response = $this->getJson(
-            "/api/v1/projects/{$data['project']->code}/epics?page=999",
-            $this->headers($data['token'])
+            "/api/v1/projects/{$project->code}/epics?page=999",
+            $this->headers($auth['token'])
         );
 
         $response->assertStatus(200);

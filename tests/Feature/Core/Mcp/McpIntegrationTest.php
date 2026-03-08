@@ -8,7 +8,9 @@ use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
+use App\Core\Services\TenantManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,21 +24,28 @@ class McpIntegrationTest extends TestCase
 
     private Project $project;
 
+    private Tenant $tenant;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->user = User::factory()->manager()->create();
+        $this->tenant = createTenant();
+
+        $this->user = User::factory()->manager()->create(['tenant_id' => $this->tenant->id]);
         $raw = ApiToken::generateRaw();
-        $this->user->apiTokens()->create(['name' => 'test', 'token' => $raw['hash']]);
+        $this->user->apiTokens()->create(['name' => 'test', 'token' => $raw['hash'], 'tenant_id' => $this->tenant->id]);
         $this->token = $raw['raw'];
 
-        $this->project = Project::factory()->create(['code' => 'MCP']);
+        $this->project = Project::factory()->create(['code' => 'MCP', 'tenant_id' => $this->tenant->id]);
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $this->user->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
+
+        // Set TenantManager so factory-created artifacts get the correct tenant_id
+        app(TenantManager::class)->setTenant($this->tenant);
     }
 
     private function mcp(string $method, array $params = [], ?string $id = '1'): \Illuminate\Testing\TestResponse
@@ -603,9 +612,10 @@ class McpIntegrationTest extends TestCase
 
     public function test_non_member_cannot_access_project_tools(): void
     {
-        $otherUser = User::factory()->create();
+        // Other user in the same tenant — no project membership
+        $otherUser = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $raw = ApiToken::generateRaw();
-        $otherUser->apiTokens()->create(['name' => 'test', 'token' => $raw['hash']]);
+        $otherUser->apiTokens()->create(['name' => 'test', 'token' => $raw['hash'], 'tenant_id' => $this->tenant->id]);
 
         $response = $this->postJson('/mcp', [
             'jsonrpc' => '2.0',
@@ -622,13 +632,13 @@ class McpIntegrationTest extends TestCase
 
     public function test_non_owner_cannot_delete_project(): void
     {
-        $member = User::factory()->create();
+        $member = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $raw = ApiToken::generateRaw();
-        $member->apiTokens()->create(['name' => 'test', 'token' => $raw['hash']]);
+        $member->apiTokens()->create(['name' => 'test', 'token' => $raw['hash'], 'tenant_id' => $this->tenant->id]);
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $member->id,
-            'role' => 'member',
+            'position' => 'member',
         ]);
 
         $response = $this->postJson('/mcp', [

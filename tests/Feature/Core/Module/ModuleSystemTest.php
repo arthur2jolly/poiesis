@@ -6,8 +6,10 @@ use App\Core\Contracts\ModuleInterface;
 use App\Core\Models\ApiToken;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Module\ModuleRegistry;
+use App\Core\Services\TenantManager;
 use App\Modules\Example\ExampleModule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,21 +24,28 @@ class ModuleSystemTest extends TestCase
 
     private Project $project;
 
+    private Tenant $tenant;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->user = User::factory()->manager()->create();
+        $this->tenant = createTenant();
+
+        $this->user = User::factory()->manager()->create(['tenant_id' => $this->tenant->id]);
         $raw = ApiToken::generateRaw();
-        $this->user->apiTokens()->create(['name' => 'test', 'token' => $raw['hash']]);
+        $this->user->apiTokens()->create(['name' => 'test', 'token' => $raw['hash'], 'tenant_id' => $this->tenant->id]);
         $this->token = $raw['raw'];
 
-        $this->project = Project::factory()->create(['code' => 'MODTEST', 'modules' => []]);
+        $this->project = Project::factory()->create(['code' => 'MODTEST', 'modules' => [], 'tenant_id' => $this->tenant->id]);
         ProjectMember::create([
             'project_id' => $this->project->id,
             'user_id' => $this->user->id,
-            'role' => 'owner',
+            'position' => 'owner',
         ]);
+
+        // Set TenantManager so factory-created artifacts get the correct tenant_id
+        app(TenantManager::class)->setTenant($this->tenant);
     }
 
     private function mcp(string $method, array $params = [], ?string $id = '1'): \Illuminate\Testing\TestResponse
