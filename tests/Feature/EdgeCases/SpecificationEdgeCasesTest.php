@@ -447,8 +447,31 @@ describe('CL9: Story deletion cleans up artifact', function (): void {
         $this->assertDatabaseMissing('stories', ['id' => $story->id]);
     });
 
-    it('cleans up the artifact record when a story is deleted')
-        ->skip('HasArtifactIdentifier does not register a deleting hook — artifact cascade not yet implemented in core.');
+    it('cleans up the artifact record when a story is deleted', function (): void {
+        $auth = createAuth();
+        $project = setupProject($auth, ['code' => 'CL9B']);
+        app(TenantManager::class)->setTenant($auth['tenant']);
+
+        $epic = Epic::factory()->create(['project_id' => $project->id]);
+        $story = Story::factory()->create(['epic_id' => $epic->id]);
+        $storyId = $story->fresh()->identifier;
+
+        $this->assertDatabaseHas('artifacts', [
+            'artifactable_id' => $story->id,
+            'artifactable_type' => $story->getMorphClass(),
+        ]);
+
+        $this->deleteJson(
+            "/api/v1/projects/CL9B/stories/{$storyId}",
+            [],
+            authHeader($auth['token'])
+        )->assertStatus(204);
+
+        $this->assertDatabaseMissing('artifacts', [
+            'artifactable_id' => $story->id,
+            'artifactable_type' => $story->getMorphClass(),
+        ]);
+    });
 
 });
 

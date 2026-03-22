@@ -12,6 +12,10 @@ trait HasArtifactIdentifier
 {
     public static function bootHasArtifactIdentifier(): void
     {
+        static::deleting(function (self $model) {
+            $model->artifact()->delete();
+        });
+
         static::created(function (self $model) {
             DB::transaction(function () use ($model) {
                 $projectId = $model->getProjectIdForArtifact();
