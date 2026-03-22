@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Example\ExampleModule;
+
 return [
 
     /*
@@ -12,6 +14,6 @@ return [
     |
     */
 
-    'example' => \App\Modules\Example\ExampleModule::class,
+    'example' => ExampleModule::class,
 
 ];

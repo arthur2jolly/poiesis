@@ -6,8 +6,9 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature', 'Unit');
 

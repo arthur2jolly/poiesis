@@ -5,6 +5,7 @@ namespace App\Core\Models;
 use App\Core\Models\Concerns\HasArtifactIdentifier;
 use App\Core\Models\Concerns\HasDependencies;
 use App\Core\Models\Concerns\HasStatusTransitions;
+use Carbon\Carbon;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -25,10 +26,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $ordre
  * @property int|null $estimation_temps
  * @property array<int, string>|null $tags
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Core\Models\Project $project
- * @property-read \App\Core\Models\Story|null $story
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Project $project
+ * @property-read Story|null $story
  */
 class Task extends Model
 {

@@ -12,6 +12,7 @@ use App\Core\Models\User;
 use App\Core\Services\TenantManager;
 use App\Core\Support\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class RoleAuthorizationTest extends TestCase
@@ -80,7 +81,7 @@ class RoleAuthorizationTest extends TestCase
         app(TenantManager::class)->setTenant($tenant);
     }
 
-    private function mcp(string $method, User $user, array $params = []): \Illuminate\Testing\TestResponse
+    private function mcp(string $method, User $user, array $params = []): TestResponse
     {
         $token = ApiToken::generateRaw();
         $user->apiTokens()->create(['name' => 'test', 'token' => $token['hash'], 'tenant_id' => $this->tenant->id]);
@@ -93,7 +94,7 @@ class RoleAuthorizationTest extends TestCase
         ], ['Authorization' => 'Bearer '.$token['raw']]);
     }
 
-    private function mcpCall(string $toolName, array $arguments, User $user): \Illuminate\Testing\TestResponse
+    private function mcpCall(string $toolName, array $arguments, User $user): TestResponse
     {
         return $this->mcp('tools/call', $user, [
             'name' => $toolName,

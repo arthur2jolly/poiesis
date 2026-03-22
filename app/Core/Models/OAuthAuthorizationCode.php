@@ -3,6 +3,7 @@
 namespace App\Core\Models;
 
 use App\Core\Models\Concerns\BelongsToTenant;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,10 +18,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<int, string>|null $scopes
  * @property string|null $code_challenge
  * @property string|null $code_challenge_method
- * @property \Carbon\Carbon $expires_at
- * @property \Carbon\Carbon $created_at
- * @property-read \App\Core\Models\OAuthClient $client
- * @property-read \App\Core\Models\User $user
+ * @property Carbon $expires_at
+ * @property Carbon $created_at
+ * @property-read OAuthClient $client
+ * @property-read User $user
  */
 class OAuthAuthorizationCode extends Model
 {

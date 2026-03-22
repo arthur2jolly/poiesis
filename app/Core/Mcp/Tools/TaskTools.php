@@ -11,7 +11,9 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\User;
+use App\Core\Services\DependencyService;
 use App\Core\Support\Role;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -45,8 +47,8 @@ class TaskTools implements McpToolInterface
      * @return array<string, mixed>
      *
      * @throws \InvalidArgumentException When the tool name is not handled by this class.
-     * @throws \Illuminate\Validation\ValidationException On invalid input or access denial.
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException When the project does not exist.
+     * @throws ValidationException On invalid input or access denial.
+     * @throws ModelNotFoundException When the project does not exist.
      */
     public function execute(string $toolName, array $params, User $user): mixed
     {
@@ -281,7 +283,7 @@ class TaskTools implements McpToolInterface
             throw ValidationException::withMessages(['project' => ['Access denied.']]);
         }
 
-        $deps = app(\App\Core\Services\DependencyService::class)->getDependencies($task);
+        $deps = app(DependencyService::class)->getDependencies($task);
 
         $result = $task->format();
         $result['blocked_by'] = array_map(fn ($m) => $m->identifier, $deps['blocked_by']);

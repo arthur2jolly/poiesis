@@ -3,6 +3,8 @@
 namespace App\Core\Models;
 
 use App\Core\Models\Concerns\BelongsToTenant;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,11 +20,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<int, string> $redirect_uris
  * @property array<int, string> $grant_types
  * @property array<int, string>|null $scopes
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Core\Models\User|null $user
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\OAuthAuthorizationCode> $authorizationCodes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\OAuthAccessToken> $accessTokens
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read User|null $user
+ * @property-read Collection<int, OAuthAuthorizationCode> $authorizationCodes
+ * @property-read Collection<int, OAuthAccessToken> $accessTokens
  */
 class OAuthClient extends Model
 {

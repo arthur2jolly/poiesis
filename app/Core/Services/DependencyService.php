@@ -4,6 +4,7 @@ namespace App\Core\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class DependencyService
@@ -38,7 +39,7 @@ class DependencyService
         }
 
         DB::table('item_dependencies')->insert([
-            'id' => (string) \Illuminate\Support\Str::uuid7(),
+            'id' => (string) Str::uuid7(),
             'item_id' => $blockedItem->id,
             'item_type' => $blockedItem->getMorphClass(),
             'depends_on_id' => $blockingItem->id,

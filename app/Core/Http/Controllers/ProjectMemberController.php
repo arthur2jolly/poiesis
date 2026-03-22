@@ -2,7 +2,9 @@
 
 namespace App\Core\Http\Controllers;
 
+use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -11,7 +13,7 @@ class ProjectMemberController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
         $perPage = min((int) $request->input('per_page', 25), 100);
@@ -38,10 +40,10 @@ class ProjectMemberController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
-        /** @var \App\Core\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = $request->user();
 
         if (! $this->isOwner($project->id, $authUser->id)) {
@@ -79,10 +81,10 @@ class ProjectMemberController extends Controller
 
     public function update(Request $request, string $code, string $memberId): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
-        /** @var \App\Core\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = $request->user();
 
         if (! $this->isOwner($project->id, $authUser->id)) {
@@ -118,10 +120,10 @@ class ProjectMemberController extends Controller
 
     public function destroy(Request $request, string $code, string $memberId): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
-        /** @var \App\Core\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = $request->user();
 
         if (! $this->isOwner($project->id, $authUser->id)) {

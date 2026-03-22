@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -11,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string $project_id
  * @property string $user_id
  * @property string $position
- * @property \Carbon\Carbon|null $created_at
- * @property-read \App\Core\Models\Project $project
- * @property-read \App\Core\Models\User $user
+ * @property Carbon|null $created_at
+ * @property-read Project $project
+ * @property-read User $user
  */
 class ProjectMember extends Pivot
 {

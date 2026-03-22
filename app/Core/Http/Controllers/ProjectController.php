@@ -7,6 +7,7 @@ use App\Core\Http\Requests\UpdateProjectRequest;
 use App\Core\Http\Resources\ProjectResource;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -15,7 +16,7 @@ class ProjectController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Core\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $perPage = min((int) $request->input('per_page', 25), 100);
@@ -35,7 +36,7 @@ class ProjectController extends Controller
 
     public function store(StoreProjectRequest $request): JsonResponse
     {
-        /** @var \App\Core\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $project = Project::create($request->validated());
@@ -53,7 +54,7 @@ class ProjectController extends Controller
 
     public function show(Request $request, string $code): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
         return (new ProjectResource($project))->response();
@@ -61,7 +62,7 @@ class ProjectController extends Controller
 
     public function update(UpdateProjectRequest $request, string $code): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
         $project->update($request->validated());
@@ -71,10 +72,10 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, string $code): JsonResponse
     {
-        /** @var \App\Core\Models\Project $project */
+        /** @var Project $project */
         $project = $request->attributes->get('project');
 
-        /** @var \App\Core\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $isOwner = ProjectMember::where('project_id', $project->id)

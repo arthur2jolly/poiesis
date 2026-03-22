@@ -6,8 +6,10 @@ namespace App\Core\Mcp\Http\Controllers;
 
 use App\Core\Mcp\Server\McpServer;
 use App\Core\Mcp\Server\McpTransport;
+use App\Core\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -18,7 +20,7 @@ class McpController extends Controller
         private readonly McpTransport $transport,
     ) {}
 
-    public function handle(Request $request): JsonResponse|\Illuminate\Http\Response
+    public function handle(Request $request): JsonResponse|Response
     {
         try {
             $jsonRpc = $this->transport->decodeRequest($request);
@@ -28,7 +30,7 @@ class McpController extends Controller
             );
         }
 
-        /** @var \App\Core\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $response = $this->mcpServer->handleRequest($jsonRpc, $user);

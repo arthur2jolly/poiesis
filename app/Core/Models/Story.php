@@ -5,8 +5,10 @@ namespace App\Core\Models;
 use App\Core\Models\Concerns\HasArtifactIdentifier;
 use App\Core\Models\Concerns\HasDependencies;
 use App\Core\Models\Concerns\HasStatusTransitions;
+use Carbon\Carbon;
 use Database\Factories\StoryFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,10 +28,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $story_points
  * @property string|null $reference_doc
  * @property array<int, string>|null $tags
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Core\Models\Epic $epic
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Task> $tasks
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Epic $epic
+ * @property-read Collection<int, Task> $tasks
  */
 class Story extends Model
 {

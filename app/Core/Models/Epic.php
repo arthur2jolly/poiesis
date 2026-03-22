@@ -3,7 +3,9 @@
 namespace App\Core\Models;
 
 use App\Core\Models\Concerns\HasArtifactIdentifier;
+use Carbon\Carbon;
 use Database\Factories\EpicFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,10 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $project_id
  * @property string $titre
  * @property string|null $description
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Core\Models\Project $project
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Story> $stories
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Project $project
+ * @property-read Collection<int, Story> $stories
  */
 class Epic extends Model
 {

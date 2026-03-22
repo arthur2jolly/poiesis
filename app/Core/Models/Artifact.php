@@ -3,6 +3,7 @@
 namespace App\Core\Models;
 
 use App\Core\Models\Concerns\BelongsToTenant;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,10 +18,10 @@ use Illuminate\Support\Collection;
  * @property int $sequence_number
  * @property string $artifactable_id
  * @property string $artifactable_type
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Core\Models\Project $project
- * @property-read \Illuminate\Database\Eloquent\Model $artifactable
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Project $project
+ * @property-read Model $artifactable
  */
 class Artifact extends Model
 {
@@ -56,23 +57,23 @@ class Artifact extends Model
     }
 
     /**
-     * @return Collection<int, \Illuminate\Database\Eloquent\Model>
+     * @return Collection<int, Model>
      */
     public static function searchInProject(Project $project, string $keyword): Collection
     {
         $like = "%{$keyword}%";
 
-        /** @var Collection<int, \Illuminate\Database\Eloquent\Model> $epics */
+        /** @var Collection<int, Model> $epics */
         $epics = Epic::where('project_id', $project->id)
             ->where(fn ($q) => $q->where('titre', 'like', $like)->orWhere('description', 'like', $like))
             ->get();
 
-        /** @var Collection<int, \Illuminate\Database\Eloquent\Model> $stories */
+        /** @var Collection<int, Model> $stories */
         $stories = Story::whereHas('epic', fn ($q) => $q->where('project_id', $project->id))
             ->where(fn ($q) => $q->where('titre', 'like', $like)->orWhere('description', 'like', $like))
             ->get();
 
-        /** @var Collection<int, \Illuminate\Database\Eloquent\Model> $tasks */
+        /** @var Collection<int, Model> $tasks */
         $tasks = Task::where('project_id', $project->id)
             ->where(fn ($q) => $q->where('titre', 'like', $like)->orWhere('description', 'like', $like))
             ->get();

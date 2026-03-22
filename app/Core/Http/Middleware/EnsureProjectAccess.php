@@ -3,6 +3,7 @@
 namespace App\Core\Http\Middleware;
 
 use App\Core\Models\Project;
+use App\Core\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +24,7 @@ class EnsureProjectAccess
             return response()->json(['message' => 'Project not found.'], 404);
         }
 
-        /** @var \App\Core\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $isMember = $project->users()
