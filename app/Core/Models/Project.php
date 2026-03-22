@@ -3,7 +3,10 @@
 namespace App\Core\Models;
 
 use App\Core\Models\Concerns\BelongsToTenant;
+use Carbon\Carbon;
 use Database\Factories\ProjectFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,14 +20,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $titre
  * @property string|null $description
  * @property array<int, string> $modules
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Epic> $epics
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Task> $tasks
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Task> $standaloneTasks
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Artifact> $artifacts
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\User> $users
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\ProjectMember> $members
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Collection<int, Epic> $epics
+ * @property-read Collection<int, Task> $tasks
+ * @property-read Collection<int, Task> $standaloneTasks
+ * @property-read Collection<int, Artifact> $artifacts
+ * @property-read Collection<int, User> $users
+ * @property-read Collection<int, ProjectMember> $members
  */
 class Project extends Model
 {
@@ -80,10 +83,10 @@ class Project extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
-    public function scopeAccessibleBy(\Illuminate\Database\Eloquent\Builder $query, User $user): \Illuminate\Database\Eloquent\Builder
+    public function scopeAccessibleBy(Builder $query, User $user): Builder
     {
         return $query->whereHas('members', fn ($q) => $q->where('user_id', $user->id));
     }

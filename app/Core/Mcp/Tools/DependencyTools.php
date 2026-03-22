@@ -8,6 +8,7 @@ use App\Core\Mcp\Contracts\McpToolInterface;
 use App\Core\Models\Artifact;
 use App\Core\Models\User;
 use App\Core\Services\DependencyService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class DependencyTools implements McpToolInterface
@@ -39,7 +40,7 @@ class DependencyTools implements McpToolInterface
      * @return array<string, mixed>
      *
      * @throws \InvalidArgumentException When the tool name is not handled by this class.
-     * @throws \Illuminate\Validation\ValidationException When an identifier cannot be resolved.
+     * @throws ValidationException When an identifier cannot be resolved.
      */
     public function execute(string $toolName, array $params, User $user): mixed
     {
@@ -136,7 +137,7 @@ class DependencyTools implements McpToolInterface
         ];
     }
 
-    private function resolveItem(string $identifier): \Illuminate\Database\Eloquent\Model
+    private function resolveItem(string $identifier): Model
     {
         $model = Artifact::resolveIdentifier($identifier);
 

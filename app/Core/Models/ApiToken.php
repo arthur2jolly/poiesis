@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $user_id
  * @property string $name
  * @property string $token
- * @property \Carbon\Carbon|null $expires_at
- * @property \Carbon\Carbon|null $last_used_at
- * @property \Carbon\Carbon $created_at
- * @property-read \App\Core\Models\User $user
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $last_used_at
+ * @property Carbon $created_at
+ * @property-read User $user
  */
 class ApiToken extends Model
 {

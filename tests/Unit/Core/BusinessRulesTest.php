@@ -5,6 +5,7 @@ use App\Core\Mcp\Contracts\McpToolInterface;
 use App\Core\Models\ApiToken;
 use App\Core\Models\Epic;
 use App\Core\Models\OAuthAccessToken;
+use App\Core\Models\OAuthClient;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
@@ -402,7 +403,7 @@ describe('OAuthAccessToken expiry', function () {
         $tenant = createTenant();
         $this->tenant = $tenant;
         $this->user = User::factory()->create(['tenant_id' => $tenant->id]);
-        $this->client = \App\Core\Models\OAuthClient::create([
+        $this->client = OAuthClient::create([
             'name' => 'Test Client',
             'client_id' => 'oauth-test-client-'.uniqid(),
             'redirect_uris' => ['http://localhost/callback'],

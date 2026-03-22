@@ -3,7 +3,9 @@
 namespace App\Core\Models;
 
 use App\Core\Models\Concerns\BelongsToTenant;
+use Carbon\Carbon;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -17,11 +19,11 @@ use Illuminate\Support\Facades\Hash;
  * @property string $name
  * @property string|null $password
  * @property int $role
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\Project> $projects
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\ApiToken> $apiTokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Core\Models\OAuthClient> $oauthClients
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Collection<int, Project> $projects
+ * @property-read Collection<int, ApiToken> $apiTokens
+ * @property-read Collection<int, OAuthClient> $oauthClients
  */
 class User extends Authenticatable
 {

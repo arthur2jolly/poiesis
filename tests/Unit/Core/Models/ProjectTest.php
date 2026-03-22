@@ -5,6 +5,7 @@ namespace Tests\Unit\Core\Models;
 use App\Core\Models\Epic;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,7 +42,7 @@ class ProjectTest extends TestCase
         $tenant = createTenant();
         $project = Project::factory()->create(['tenant_id' => $tenant->id]);
         $epic = Epic::factory()->create(['project_id' => $project->id]);
-        $story = \App\Core\Models\Story::factory()->create(['epic_id' => $epic->id]);
+        $story = Story::factory()->create(['epic_id' => $epic->id]);
 
         Task::factory()->standalone()->create(['project_id' => $project->id]);
         Task::factory()->create(['project_id' => $project->id, 'story_id' => $story->id]);

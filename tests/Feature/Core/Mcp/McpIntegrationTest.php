@@ -12,6 +12,7 @@ use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\TenantManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class McpIntegrationTest extends TestCase
@@ -48,7 +49,7 @@ class McpIntegrationTest extends TestCase
         app(TenantManager::class)->setTenant($this->tenant);
     }
 
-    private function mcp(string $method, array $params = [], ?string $id = '1'): \Illuminate\Testing\TestResponse
+    private function mcp(string $method, array $params = [], ?string $id = '1'): TestResponse
     {
         return $this->postJson('/mcp', [
             'jsonrpc' => '2.0',
@@ -58,7 +59,7 @@ class McpIntegrationTest extends TestCase
         ], ['Authorization' => 'Bearer '.$this->token]);
     }
 
-    private function mcpCall(string $toolName, array $arguments = []): \Illuminate\Testing\TestResponse
+    private function mcpCall(string $toolName, array $arguments = []): TestResponse
     {
         return $this->mcp('tools/call', [
             'name' => $toolName,
@@ -66,7 +67,7 @@ class McpIntegrationTest extends TestCase
         ]);
     }
 
-    private function extractToolResult(\Illuminate\Testing\TestResponse $response): mixed
+    private function extractToolResult(TestResponse $response): mixed
     {
         $response->assertOk();
         $data = $response->json();

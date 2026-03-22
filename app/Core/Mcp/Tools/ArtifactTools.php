@@ -12,6 +12,7 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
 class ArtifactTools implements McpToolInterface
@@ -38,8 +39,8 @@ class ArtifactTools implements McpToolInterface
      * @return array<string, mixed>
      *
      * @throws \InvalidArgumentException When the tool name is not handled by this class.
-     * @throws \Illuminate\Validation\ValidationException On invalid input or access denial.
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException When the project does not exist.
+     * @throws ValidationException On invalid input or access denial.
+     * @throws ModelNotFoundException When the project does not exist.
      */
     public function execute(string $toolName, array $params, User $user): mixed
     {

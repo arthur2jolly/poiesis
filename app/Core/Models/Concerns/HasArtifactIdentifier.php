@@ -3,6 +3,7 @@
 namespace App\Core\Models\Concerns;
 
 use App\Core\Models\Artifact;
+use App\Core\Models\Epic;
 use App\Core\Models\Project;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +58,7 @@ trait HasArtifactIdentifier
 
         /** @phpstan-ignore function.alreadyNarrowedType */
         if (method_exists($this, 'project')) {
-            /** @var \App\Core\Models\Project|null $project */
+            /** @var Project|null $project */
             $project = $this->project; // @phpstan-ignore-line
             if ($project !== null) {
                 return $project->id;
@@ -66,7 +67,7 @@ trait HasArtifactIdentifier
 
         /** @phpstan-ignore function.alreadyNarrowedType */
         if (method_exists($this, 'epic')) {
-            /** @var \App\Core\Models\Epic|null $epic */
+            /** @var Epic|null $epic */
             $epic = $this->epic; // @phpstan-ignore-line
             if ($epic !== null) {
                 return $epic->project_id;
@@ -93,7 +94,7 @@ trait HasArtifactIdentifier
 
         /** @phpstan-ignore function.alreadyNarrowedType */
         if (method_exists($this, 'project')) {
-            /** @var \App\Core\Models\Project|null $project */
+            /** @var Project|null $project */
             $project = $this->project; // @phpstan-ignore-line
             if ($project !== null) {
                 return $project->code;
@@ -102,7 +103,7 @@ trait HasArtifactIdentifier
 
         /** @phpstan-ignore function.alreadyNarrowedType */
         if (method_exists($this, 'epic')) {
-            /** @var \App\Core\Models\Epic|null $epic */
+            /** @var Epic|null $epic */
             $epic = $this->epic; // @phpstan-ignore-line
             if ($epic !== null) {
                 return $epic->project->code;

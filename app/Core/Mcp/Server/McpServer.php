@@ -9,6 +9,8 @@ use App\Core\Mcp\Contracts\McpResourceInterface;
 use App\Core\Mcp\Contracts\McpToolInterface;
 use App\Core\Models\Project;
 use App\Core\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class McpServer
 {
@@ -175,9 +177,9 @@ class McpServer
                     ['type' => 'text', 'text' => json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)],
                 ],
             ], $id);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return $transport->encodeError(-32602, $e->getMessage(), $id, $e->errors());
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return $transport->encodeError(-32602, 'Resource not found.', $id);
         } catch (\Throwable $e) {
             return $transport->encodeError(-32603, $e->getMessage(), $id);

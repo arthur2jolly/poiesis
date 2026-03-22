@@ -4,6 +4,7 @@ namespace Tests\Feature\Core\Api;
 
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -114,7 +115,7 @@ class ProjectAndMemberTest extends TestCase
     {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'ADDMEM']);
-        $newUser = \App\Core\Models\User::factory()->create(['tenant_id' => $auth['tenant']->id]);
+        $newUser = User::factory()->create(['tenant_id' => $auth['tenant']->id]);
 
         $response = $this->postJson('/api/v1/projects/ADDMEM/members', [
             'user_id' => $newUser->id,
@@ -133,7 +134,7 @@ class ProjectAndMemberTest extends TestCase
     {
         $auth = createAuth();
         $project = setupProject($auth, ['code' => 'DUPMEM']);
-        $newUser = \App\Core\Models\User::factory()->create(['tenant_id' => $auth['tenant']->id]);
+        $newUser = User::factory()->create(['tenant_id' => $auth['tenant']->id]);
         ProjectMember::create([
             'project_id' => $project->id,
             'user_id' => $newUser->id,

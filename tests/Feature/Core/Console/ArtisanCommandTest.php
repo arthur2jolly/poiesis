@@ -8,6 +8,7 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class ArtisanCommandTest extends TestCase
@@ -139,7 +140,7 @@ class ArtisanCommandTest extends TestCase
 
         $user->refresh();
         $this->assertNotEquals($oldPasswordHash, $user->password);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('NewPassword456', $user->password));
+        $this->assertTrue(Hash::check('NewPassword456', $user->password));
     }
 
     public function test_user_update_password_and_name(): void
@@ -153,7 +154,7 @@ class ArtisanCommandTest extends TestCase
 
         $this->assertDatabaseHas('users', ['name' => 'NewAgent']);
         $user = User::withoutTenantScope()->where('name', 'NewAgent')->first();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('NewPassword456', $user->password));
+        $this->assertTrue(Hash::check('NewPassword456', $user->password));
     }
 
     public function test_user_update_password_empty_rejected(): void

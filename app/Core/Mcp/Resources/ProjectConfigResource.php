@@ -7,6 +7,7 @@ namespace App\Core\Mcp\Resources;
 use App\Core\Mcp\Contracts\McpResourceInterface;
 use App\Core\Models\Project;
 use App\Core\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ProjectConfigResource implements McpResourceInterface
 {
@@ -43,7 +44,7 @@ class ProjectConfigResource implements McpResourceInterface
      * @param  User  $user  Authenticated user (reserved for future access control).
      * @return array<string, mixed> Configuration payload with all enumerated values and active modules.
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException When no project matches the code.
+     * @throws ModelNotFoundException When no project matches the code.
      */
     public function read(array $params, User $user): array
     {

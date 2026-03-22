@@ -10,7 +10,9 @@ use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
@@ -75,7 +77,7 @@ class OAuthController extends Controller
     }
 
     // POIESIS-40: Authorization endpoint (consent screen)
-    public function authorize(Request $request): \Illuminate\Http\Response|JsonResponse|\Illuminate\Http\RedirectResponse
+    public function authorize(Request $request): Response|JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'client_id' => 'required|string',
@@ -119,7 +121,7 @@ class OAuthController extends Controller
         array $validated,
         array $scopes,
         string $state,
-    ): \Illuminate\Http\Response {
+    ): Response {
         $scopeList = ! empty($scopes)
             ? '<ul>'.implode('', array_map(fn ($s) => "<li>{$s}</li>", $scopes)).'</ul>'
             : '<p>No specific scopes requested.</p>';
@@ -175,7 +177,7 @@ class OAuthController extends Controller
         array $validated,
         array $scopes,
         string $state,
-    ): \Illuminate\Http\RedirectResponse {
+    ): RedirectResponse {
         $redirectUri = $validated['redirect_uri'];
 
         if ($request->input('decision') !== 'approve') {
