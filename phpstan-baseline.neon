@@ -1549,12 +1549,6 @@ parameters:
 			path: app/Modules/Example/Mcp/ExampleTools.php
 
 		-
-			message: '#^Method App\\Modules\\Kanban\\Listeners\\KanbanProjectSavedListener\:\:handle\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/Kanban/Listeners/KanbanProjectSavedListener.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 1
