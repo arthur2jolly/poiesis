@@ -53,12 +53,14 @@ class DashboardController extends Controller
 
         $registry = app(ModuleRegistry::class);
         $activeModules = $project->modules ?? [];
-        $allModules = collect($registry->all())->map(fn ($module) => [
-            'slug' => $module->slug(),
-            'name' => $module->name(),
-            'description' => $module->description(),
-            'active' => in_array($module->slug(), $activeModules, true),
-        ])->values();
+        $allModules = collect($registry->all())
+            ->reject(fn ($module) => $module->slug() === 'example')
+            ->map(fn ($module) => [
+                'slug' => $module->slug(),
+                'name' => $module->name(),
+                'description' => $module->description(),
+                'active' => in_array($module->slug(), $activeModules, true),
+            ])->values();
 
         return view('dashboard::project.overview', compact(
             'project', 'epics', 'openStoriesCount', 'members', 'allModules'
