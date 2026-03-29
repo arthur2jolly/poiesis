@@ -12,10 +12,7 @@
 @endsection
 
 @section('tabs')
-    <a href="{{ route('dashboard.project', $project->code) }}" class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-1 py-3 text-sm font-medium">Vue d'ensemble</a>
-    <a href="{{ route('dashboard.epics', $project->code) }}" class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-1 py-3 text-sm font-medium">Epics</a>
-    <a href="{{ route('dashboard.stories', $project->code) }}" class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-1 py-3 text-sm font-medium">Stories</a>
-    <a href="{{ route('dashboard.tasks', $project->code) }}" class="border-b-2 border-blue-500 text-blue-600 px-1 py-3 text-sm font-medium">Tasks</a>
+    @include('dashboard::components.project-tabs', ['project' => $project, 'active' => 'tasks'])
 @endsection
 
 @section('content')
@@ -64,8 +61,8 @@
         @endif
 
         @php
-            $blockedBy = $task->blockedBy ?? collect();
-            $blocks = $task->blocks ?? collect();
+            $blockedBy = $task->blockedBy();
+            $blocks = $task->blocks();
         @endphp
         @if($blockedBy->isNotEmpty() || $blocks->isNotEmpty())
             <div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">

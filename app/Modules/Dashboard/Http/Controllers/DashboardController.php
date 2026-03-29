@@ -10,6 +10,8 @@ use App\Core\Models\Project;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\User;
+use App\Core\Module\ModuleRegistry;
+use App\Modules\Document\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
@@ -23,6 +25,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $projects = Project::accessibleBy($user)
+            ->whereJsonContains('modules', 'dashboard')
             ->withCount(['epics', 'tasks'])
             ->orderBy('titre')
             ->get();
@@ -48,8 +51,17 @@ class DashboardController extends Controller
 
         $members = $project->members()->with('user')->get();
 
+        $registry = app(ModuleRegistry::class);
+        $activeModules = $project->modules ?? [];
+        $allModules = collect($registry->all())->map(fn ($module) => [
+            'slug' => $module->slug(),
+            'name' => $module->name(),
+            'description' => $module->description(),
+            'active' => in_array($module->slug(), $activeModules, true),
+        ])->values();
+
         return view('dashboard::project.overview', compact(
-            'project', 'epics', 'openStoriesCount', 'members'
+            'project', 'epics', 'openStoriesCount', 'members', 'allModules'
         ));
     }
 
@@ -155,12 +167,50 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function documents(Request $request, string $code): View
+    {
+        $project = $this->resolveProject($request, $code);
+
+        if (! in_array('document', $project->modules ?? [], true)) {
+            abort(404);
+        }
+
+        $documents = Document::where('project_id', $project->id)
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('dashboard::project.documents', compact('project', 'documents'));
+    }
+
+    public function document(Request $request, string $code, string $identifier): View
+    {
+        $project = $this->resolveProject($request, $code);
+
+        if (! in_array('document', $project->modules ?? [], true)) {
+            abort(404);
+        }
+
+        $model = Artifact::resolveIdentifier($identifier);
+
+        if (! $model instanceof Document || $model->project_id !== $project->id) {
+            throw new NotFoundHttpException;
+        }
+
+        return view('dashboard::project.document', [
+            'project' => $project,
+            'document' => $model,
+        ]);
+    }
+
     private function resolveProject(Request $request, string $code): Project
     {
         /** @var User $user */
         $user = $request->user();
 
-        $project = Project::accessibleBy($user)->where('code', $code)->first();
+        $project = Project::accessibleBy($user)
+            ->whereJsonContains('modules', 'dashboard')
+            ->where('code', $code)
+            ->first();
 
         if ($project === null) {
             abort(404);

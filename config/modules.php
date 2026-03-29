@@ -2,7 +2,6 @@
 
 use App\Modules\Dashboard\DashboardModule;
 use App\Modules\Document\DocumentModule;
-use App\Modules\Example\ExampleModule;
 
 return [
 
@@ -16,7 +15,6 @@ return [
     |
     */
 
-    'example' => ExampleModule::class,
     'document' => DocumentModule::class,
     'dashboard' => DashboardModule::class,
 

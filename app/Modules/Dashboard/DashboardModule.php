@@ -55,6 +55,8 @@ class DashboardModule implements ModuleInterface
                     Route::get('/{code}/stories/{identifier}', [DashboardController::class, 'story'])->name('story');
                     Route::get('/{code}/tasks', [DashboardController::class, 'tasks'])->name('tasks');
                     Route::get('/{code}/tasks/{identifier}', [DashboardController::class, 'task'])->name('task');
+                    Route::get('/{code}/documents', [DashboardController::class, 'documents'])->name('documents');
+                    Route::get('/{code}/documents/{identifier}', [DashboardController::class, 'document'])->name('document');
                 });
         });
     }

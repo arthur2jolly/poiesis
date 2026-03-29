@@ -10,10 +10,7 @@
 @endsection
 
 @section('tabs')
-    <a href="{{ route('dashboard.project', $project->code) }}" class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-1 py-3 text-sm font-medium">Vue d'ensemble</a>
-    <a href="{{ route('dashboard.epics', $project->code) }}" class="border-b-2 border-blue-500 text-blue-600 px-1 py-3 text-sm font-medium">Epics</a>
-    <a href="{{ route('dashboard.stories', $project->code) }}" class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-1 py-3 text-sm font-medium">Stories</a>
-    <a href="{{ route('dashboard.tasks', $project->code) }}" class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-1 py-3 text-sm font-medium">Tasks</a>
+    @include('dashboard::components.project-tabs', ['project' => $project, 'active' => 'epics'])
 @endsection
 
 @section('content')
