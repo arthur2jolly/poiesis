@@ -42,6 +42,18 @@ class MemberTools implements McpToolInterface
                 ],
             ],
             [
+                'name' => 'update_user',
+                'description' => 'Update a user\'s password (administrator or manager only)',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'user_id' => ['type' => 'string', 'description' => 'User ID'],
+                        'password' => ['type' => 'string', 'description' => 'New password (min 8 characters)'],
+                    ],
+                    'required' => ['user_id', 'password'],
+                ],
+            ],
+            [
                 'name' => 'list_members',
                 'description' => 'List members of a project',
                 'inputSchema' => [
@@ -101,6 +113,7 @@ class MemberTools implements McpToolInterface
         return match ($toolName) {
             'list_users' => $this->listUsers($params, $user),
             'create_user' => $this->createUser($params, $user),
+            'update_user' => $this->updateUser($params, $user),
             'list_members' => $this->listMembers($params, $user),
             'add_member' => $this->addMember($params, $user),
             'update_member' => $this->updateMember($params, $user),
@@ -182,6 +195,36 @@ class MemberTools implements McpToolInterface
             'id' => $newUser->id,
             'name' => $newUser->name,
             'role' => strtolower(Role::getName($newUser->role)),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function updateUser(array $params, User $user): array
+    {
+        if (! Role::isManagerOrAbove($user->role)) {
+            throw ValidationException::withMessages([
+                'user' => ['You do not have permission to update users.'],
+            ]);
+        }
+
+        /** @var User $target */
+        $target = User::findOrFail($params['user_id']);
+
+        $password = $params['password'];
+        if (strlen($password) < 8) {
+            throw ValidationException::withMessages(['password' => ['Password must be at least 8 characters.']]);
+        }
+
+        $target->password = $password;
+        $target->save();
+
+        return [
+            'id' => $target->id,
+            'name' => $target->name,
+            'message' => 'Password updated successfully.',
         ];
     }
 
