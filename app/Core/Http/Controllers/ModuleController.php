@@ -3,6 +3,7 @@
 namespace App\Core\Http\Controllers;
 
 use App\Core\Models\ProjectMember;
+use App\Core\Models\User;
 use App\Core\Module\ModuleRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class ModuleController extends Controller
     public function activate(Request $request, string $code): JsonResponse
     {
         $project = $request->attributes->get('project');
+        /** @var User $user */
         $user = $request->user();
 
         if (! $this->isOwner($project->id, $user->id)) {
@@ -79,6 +81,7 @@ class ModuleController extends Controller
     public function deactivate(Request $request, string $code, string $slug): JsonResponse
     {
         $project = $request->attributes->get('project');
+        /** @var User $user */
         $user = $request->user();
 
         if (! $this->isOwner($project->id, $user->id)) {

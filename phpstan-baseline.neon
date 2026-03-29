@@ -37,18 +37,6 @@ parameters:
 			path: app/Core/Http/Controllers/ArtifactController.php
 
 		-
-			message: '#^Cannot access property \$id on App\\Models\\User\|null\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: app/Core/Http/Controllers/ModuleController.php
-
-		-
-			message: '#^Parameter \#2 \$userId of method App\\Core\\Http\\Controllers\\ModuleController\:\:isOwner\(\) expects string, int given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Core/Http/Controllers/ModuleController.php
-
-		-
 			message: '#^Access to an undefined property App\\Core\\Models\\User\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Core\\Models\\User\>\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 1
