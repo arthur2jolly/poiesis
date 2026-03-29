@@ -3,6 +3,7 @@
 use App\Modules\Dashboard\DashboardModule;
 use App\Modules\Document\DocumentModule;
 use App\Modules\Example\ExampleModule;
+use App\Modules\Kanban\KanbanModule;
 
 return [
 
@@ -19,5 +20,6 @@ return [
     'example' => ExampleModule::class,
     'document' => DocumentModule::class,
     'dashboard' => DashboardModule::class,
+    'kanban' => KanbanModule::class,
 
 ];

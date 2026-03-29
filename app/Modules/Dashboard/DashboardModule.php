@@ -57,6 +57,8 @@ class DashboardModule implements ModuleInterface
                     Route::get('/{code}/tasks/{identifier}', [DashboardController::class, 'task'])->name('task');
                     Route::get('/{code}/documents', [DashboardController::class, 'documents'])->name('documents');
                     Route::get('/{code}/documents/{identifier}', [DashboardController::class, 'document'])->name('document');
+                    Route::get('/{code}/kanban', [DashboardController::class, 'kanban'])->name('kanban');
+                    Route::get('/{code}/kanban/{boardId}', [DashboardController::class, 'kanbanBoard'])->name('kanban.board');
                 });
         });
     }

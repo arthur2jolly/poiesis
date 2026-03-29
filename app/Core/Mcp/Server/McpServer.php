@@ -92,6 +92,13 @@ class McpServer
                     }
                 }
             }
+        } else {
+            // No project scope: expose all module tools (activation checked at call time)
+            foreach ($this->moduleTools as $providers) {
+                foreach ($providers as $provider) {
+                    $tools = array_merge($tools, $provider->tools());
+                }
+            }
         }
 
         return $tools;

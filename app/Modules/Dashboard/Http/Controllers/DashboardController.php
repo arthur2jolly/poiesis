@@ -12,6 +12,7 @@ use App\Core\Models\Task;
 use App\Core\Models\User;
 use App\Core\Module\ModuleRegistry;
 use App\Modules\Document\Models\Document;
+use App\Modules\Kanban\Models\KanbanBoard;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
@@ -202,6 +203,42 @@ class DashboardController extends Controller
             'project' => $project,
             'document' => $model,
         ]);
+    }
+
+    public function kanban(Request $request, string $code): View
+    {
+        $project = $this->resolveProject($request, $code);
+
+        if (! in_array('kanban', $project->modules ?? [], true)) {
+            abort(404);
+        }
+
+        $boards = KanbanBoard::where('project_id', $project->id)
+            ->with(['columns.boardTasks.task' => fn ($q) => $q->with('artifact')])
+            ->orderBy('created_at')
+            ->get();
+
+        return view('dashboard::project.kanban', compact('project', 'boards'));
+    }
+
+    public function kanbanBoard(Request $request, string $code, string $boardId): View
+    {
+        $project = $this->resolveProject($request, $code);
+
+        if (! in_array('kanban', $project->modules ?? [], true)) {
+            abort(404);
+        }
+
+        $board = KanbanBoard::where('id', $boardId)
+            ->where('project_id', $project->id)
+            ->with(['columns.boardTasks.task' => fn ($q) => $q->with('artifact')])
+            ->first();
+
+        if ($board === null) {
+            abort(404);
+        }
+
+        return view('dashboard::project.kanban-board', compact('project', 'board'));
     }
 
     private function resolveProject(Request $request, string $code): Project
