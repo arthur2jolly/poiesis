@@ -1549,6 +1549,198 @@ parameters:
 			path: app/Modules/Example/Mcp/ExampleTools.php
 
 		-
+			message: '#^Method App\\Modules\\Kanban\\Listeners\\KanbanProjectSavedListener\:\:handle\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Listeners/KanbanProjectSavedListener.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$limit_hard\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$task\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:boardTasks\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isAtHardLimit\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy\<string, App\\Modules\\Kanban\\Models\\KanbanBoardTask, Illuminate\\Database\\Eloquent\\Collection\<int, App\\Modules\\Kanban\\Models\\KanbanBoardTask\>\|Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\>\|Illuminate\\Support\\HigherOrderCollectionProxy\<string, Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Collection\<int, App\\Modules\\Kanban\\Models\\KanbanBoardTask\>\|Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\>\:\:format\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy\<string, Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\>\:\:format\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:boardCreate\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:boardDelete\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:boardGet\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:boardList\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:boardUpdate\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:columnCloseTasks\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:columnCreate\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:columnDelete\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:columnList\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:columnReorder\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:columnUpdate\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:taskAdd\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:taskList\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:taskMove\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:taskRemove\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Mcp\\KanbanTools\:\:taskReorder\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Unable to resolve the template type TKey in call to function collect$#'
+			identifier: argument.templateType
+			count: 2
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Unable to resolve the template type TValue in call to function collect$#'
+			identifier: argument.templateType
+			count: 2
+			path: app/Modules/Kanban/Mcp/KanbanTools.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Models\\KanbanBoard\:\:columns\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Modules/Kanban/Models/KanbanBoard.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Models\\KanbanBoard\:\:project\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Modules/Kanban/Models/KanbanBoard.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Models\\KanbanBoardTask\:\:column\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Modules/Kanban/Models/KanbanBoardTask.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Models\\KanbanBoardTask\:\:task\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Modules/Kanban/Models/KanbanBoardTask.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Models\\KanbanColumn\:\:board\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Modules/Kanban/Models/KanbanColumn.php
+
+		-
+			message: '#^Method App\\Modules\\Kanban\\Models\\KanbanColumn\:\:boardTasks\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Modules/Kanban/Models/KanbanColumn.php
+
+		-
 			message: '#^Access to an undefined property App\\Core\\Models\\Artifact\:\:\$epic\.$#'
 			identifier: property.notFound
 			count: 3
