@@ -17,7 +17,11 @@
                     </div>
                     <h2 class="font-semibold text-gray-900 mb-1">{{ $project->titre }}</h2>
                     @if($project->description)
-                        <p class="text-sm text-gray-500 line-clamp-2">{{ $project->description }}</p>
+                        @include('dashboard::components.markdown', [
+                            'source' => $project->description,
+                            'plain' => true,
+                            'class' => 'text-sm text-gray-500 line-clamp-2',
+                        ])
                     @endif
                     <div class="mt-3 flex gap-4 text-xs text-gray-400">
                         <span>{{ $project->epics_count }} epics</span>

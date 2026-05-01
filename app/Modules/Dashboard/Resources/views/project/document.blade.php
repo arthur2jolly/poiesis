@@ -39,7 +39,7 @@
     @if($document->content)
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 class="text-sm font-semibold text-gray-700 mb-4">Contenu</h2>
-            <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">{{ $document->content }}</div>
+            @include('dashboard::components.markdown', ['source' => $document->content, 'class' => 'text-gray-700'])
         </div>
     @endif
 @endsection

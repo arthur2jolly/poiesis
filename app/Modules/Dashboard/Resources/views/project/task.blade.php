@@ -24,7 +24,7 @@
         </div>
         <h1 class="text-xl font-semibold text-gray-900 mb-2">{{ $task->titre }}</h1>
         @if($task->description)
-            <p class="text-gray-600 mb-4">{{ $task->description }}</p>
+            @include('dashboard::components.markdown', ['source' => $task->description, 'class' => 'text-gray-600 mb-4'])
         @endif
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
