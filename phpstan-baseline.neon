@@ -1745,3 +1745,15 @@ parameters:
 			identifier: property.nonObject
 			count: 3
 			path: app/Policies/TaskPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$tenant_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Modules/Scrum/Models/Sprint.php
+
+		-
+			message: '#^Method App\\Modules\\Scrum\\Models\\Sprint\:\:withoutTenantScope\(\) should return Illuminate\\Database\\Eloquent\\Builder\<static\(App\\Modules\\Scrum\\Models\\Sprint\)\> but returns Illuminate\\Database\\Eloquent\\Builder\<App\\Modules\\Scrum\\Models\\Sprint\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Modules/Scrum/Models/Sprint.php
