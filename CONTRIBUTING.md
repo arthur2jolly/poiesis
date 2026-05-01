@@ -23,7 +23,7 @@ ddev start
 ddev composer install
 cp .env.example .env
 ddev artisan key:generate
-ddev artisan migrate --seed --seeder=DevSeeder
+ddev artisan migrate
 ```
 
 ## Development Workflow

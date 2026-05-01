@@ -678,12 +678,6 @@ php artisan project:remove-member PROJ claude.dev
 
 ## Database Management
 
-### Reset to Fresh State
-
-```bash
-php artisan migrate:fresh --seed --seeder=DevSeeder
-```
-
 ### Create a User
 
 ```bash
