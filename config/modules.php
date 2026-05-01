@@ -4,6 +4,7 @@ use App\Modules\Dashboard\DashboardModule;
 use App\Modules\Document\DocumentModule;
 use App\Modules\Example\ExampleModule;
 use App\Modules\Kanban\KanbanModule;
+use App\Modules\Scrum\ScrumModule;
 
 return [
 
@@ -21,5 +22,6 @@ return [
     'document' => DocumentModule::class,
     'dashboard' => DashboardModule::class,
     'kanban' => KanbanModule::class,
+    'scrum' => ScrumModule::class,
 
 ];
