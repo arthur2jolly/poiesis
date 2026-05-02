@@ -5,12 +5,19 @@ declare(strict_types=1);
 namespace App\Modules\Scrum\Mcp;
 
 use App\Core\Mcp\Contracts\McpToolInterface;
+use App\Core\Models\Artifact;
+use App\Core\Models\Epic;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\Story;
+use App\Core\Models\Task;
 use App\Core\Models\User;
 use App\Core\Support\Role;
 use App\Modules\Scrum\Models\Sprint;
+use App\Modules\Scrum\Models\SprintItem;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -28,6 +35,9 @@ class ScrumTools implements McpToolInterface
             $this->getStartSprintToolDescription(),
             $this->getCloseSprintToolDescription(),
             $this->getCancelSprintToolDescription(),
+            $this->getAddToSprintToolDescription(),
+            $this->getRemoveFromSprintToolDescription(),
+            $this->getListSprintItemsToolDescription(),
         ];
     }
 
@@ -43,6 +53,9 @@ class ScrumTools implements McpToolInterface
             'start_sprint' => $this->sprintStart($params, $user),
             'close_sprint' => $this->sprintClose($params, $user),
             'cancel_sprint' => $this->sprintCancel($params, $user),
+            'add_to_sprint' => $this->sprintItemAdd($params, $user),
+            'remove_from_sprint' => $this->sprintItemRemove($params, $user),
+            'list_sprint_items' => $this->sprintItemList($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -292,6 +305,179 @@ class ScrumTools implements McpToolInterface
 
             return $locked->format();
         });
+    }
+
+    // ===== Sprint items =====
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintItemAdd(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $sprint = $this->findSprint((string) ($params['sprint_identifier'] ?? ''), $user);
+
+        if (in_array($sprint->status, ['completed', 'cancelled'], true)) {
+            throw ValidationException::withMessages([
+                'sprint' => ["Cannot add items to a sprint in status '{$sprint->status}'. Only sprints in status 'planned' or 'active' accept new items."],
+            ]);
+        }
+
+        $artifactable = $this->resolveSprintItemArtifact(
+            (string) ($params['item_identifier'] ?? ''),
+            $sprint->project_id
+        );
+
+        $position = null;
+        if (array_key_exists('position', $params) && $params['position'] !== null) {
+            if (! is_int($params['position']) || $params['position'] < 0) {
+                throw ValidationException::withMessages([
+                    'position' => ['Position must be a non-negative integer.'],
+                ]);
+            }
+            $position = $params['position'];
+        }
+
+        return DB::transaction(function () use ($sprint, $artifactable, $position) {
+            Sprint::whereKey($sprint->id)->lockForUpdate()->firstOrFail();
+
+            /** @var Artifact $artifactRow */
+            $artifactRow = Artifact::where('artifactable_id', $artifactable->getKey())
+                ->where('artifactable_type', $artifactable->getMorphClass())
+                ->firstOrFail();
+
+            $existing = SprintItem::where('artifact_id', $artifactRow->id)->first();
+            if ($existing !== null) {
+                if ($existing->sprint_id === $sprint->id) {
+                    throw ValidationException::withMessages([
+                        'item' => ['Item is already in this sprint.'],
+                    ]);
+                }
+                $other = Sprint::find($existing->sprint_id);
+                $otherIdentifier = $other instanceof Sprint ? $other->identifier : 'unknown';
+                throw ValidationException::withMessages([
+                    'item' => ["Item is already attached to sprint {$otherIdentifier}. Remove it from there first."],
+                ]);
+            }
+
+            $finalPosition = $position ?? (((int) ($sprint->items()->max('position') ?? -1)) + 1);
+
+            try {
+                $item = SprintItem::create([
+                    'sprint_id' => $sprint->id,
+                    'artifact_id' => $artifactRow->id,
+                    'position' => $finalPosition,
+                ]);
+            } catch (QueryException $e) {
+                if ($e->getCode() === '23000') {
+                    throw ValidationException::withMessages([
+                        'item' => ['Item is already attached to another sprint.'],
+                    ]);
+                }
+                throw $e;
+            }
+
+            $item->load(['sprint', 'artifact.artifactable']);
+
+            return $item->format();
+        });
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintItemRemove(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $sprint = $this->findSprint((string) ($params['sprint_identifier'] ?? ''), $user);
+
+        if (in_array($sprint->status, ['completed', 'cancelled'], true)) {
+            throw ValidationException::withMessages([
+                'sprint' => ["Cannot remove items from a sprint in status '{$sprint->status}'. Only sprints in status 'planned' or 'active' can be modified."],
+            ]);
+        }
+
+        $artifactable = Artifact::resolveIdentifier((string) ($params['item_identifier'] ?? ''));
+        if ($artifactable === null) {
+            throw ValidationException::withMessages(['item' => ['Item not found.']]);
+        }
+
+        /** @var Artifact|null $artifactRow */
+        $artifactRow = Artifact::where('artifactable_id', $artifactable->getKey())
+            ->where('artifactable_type', $artifactable->getMorphClass())
+            ->first();
+
+        if (! $artifactRow instanceof Artifact) {
+            throw ValidationException::withMessages(['item' => ['Item not found.']]);
+        }
+
+        $item = SprintItem::where('sprint_id', $sprint->id)
+            ->where('artifact_id', $artifactRow->id)
+            ->first();
+
+        if ($item === null) {
+            throw ValidationException::withMessages(['item' => ['Item is not in this sprint.']]);
+        }
+
+        $item->delete();
+
+        return ['message' => 'Item removed from sprint.'];
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintItemList(array $params, User $user): array
+    {
+        $sprint = $this->findSprint((string) ($params['sprint_identifier'] ?? ''), $user);
+
+        $items = $sprint->items()->with(['sprint', 'artifact.artifactable'])->get();
+
+        return [
+            'data' => $items->map(fn (SprintItem $i) => $i->format())->all(),
+            'meta' => ['total' => $items->count()],
+        ];
+    }
+
+    /**
+     * Resolve a Story or standalone Task identifier and verify project ownership.
+     *
+     * Returns the artifactable model (Story | Task).
+     */
+    private function resolveSprintItemArtifact(string $identifier, string $projectId): Model
+    {
+        $model = Artifact::resolveIdentifier($identifier);
+
+        if ($model === null) {
+            throw ValidationException::withMessages(['item' => ['Item not found.']]);
+        }
+
+        if ($model instanceof Epic) {
+            throw ValidationException::withMessages([
+                'item' => ['Only stories and standalone tasks can be added to a sprint. Epics are not sprintable.'],
+            ]);
+        }
+
+        if ($model instanceof Story) {
+            $itemProjectId = $model->epic->project_id;
+        } elseif ($model instanceof Task) {
+            if (! $model->isStandalone()) {
+                throw ValidationException::withMessages([
+                    'item' => ['Only standalone tasks (not linked to a story) can be added to a sprint individually. Add the parent story instead.'],
+                ]);
+            }
+            $itemProjectId = $model->project_id;
+        } else {
+            throw ValidationException::withMessages(['item' => ['Item not found.']]);
+        }
+
+        if ($itemProjectId !== $projectId) {
+            throw ValidationException::withMessages([
+                'item' => ['Item does not belong to the same project as the sprint.'],
+            ]);
+        }
+
+        return $model;
     }
 
     // ===== Helpers =====
@@ -560,6 +746,57 @@ class ScrumTools implements McpToolInterface
                     'identifier' => ['type' => 'string'],
                 ],
                 'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getAddToSprintToolDescription(): array
+    {
+        return [
+            'name' => 'add_to_sprint',
+            'description' => 'Add a story or standalone task to a sprint backlog (sprint must be in status planned or active)',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'sprint_identifier' => ['type' => 'string', 'description' => 'Sprint identifier (e.g. PROJ-S1)'],
+                    'item_identifier' => ['type' => 'string', 'description' => 'Story or standalone task identifier (e.g. PROJ-12)'],
+                    'position' => ['type' => 'integer', 'description' => 'Optional 0-indexed position (defaults to append)'],
+                ],
+                'required' => ['sprint_identifier', 'item_identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getRemoveFromSprintToolDescription(): array
+    {
+        return [
+            'name' => 'remove_from_sprint',
+            'description' => 'Remove a story or task from a sprint backlog (sprint must be in status planned or active)',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'sprint_identifier' => ['type' => 'string'],
+                    'item_identifier' => ['type' => 'string'],
+                ],
+                'required' => ['sprint_identifier', 'item_identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getListSprintItemsToolDescription(): array
+    {
+        return [
+            'name' => 'list_sprint_items',
+            'description' => 'List items of a sprint with their position and artifact details',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'sprint_identifier' => ['type' => 'string'],
+                ],
+                'required' => ['sprint_identifier'],
             ],
         ];
     }
