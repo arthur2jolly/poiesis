@@ -1757,3 +1757,15 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: app/Modules/Scrum/Models/Sprint.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$tenant_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Modules/Scrum/Models/ScrumColumn.php
+
+		-
+			message: '#^Method App\\Modules\\Scrum\\Models\\ScrumColumn\:\:withoutTenantScope\(\) should return Illuminate\\Database\\Eloquent\\Builder\<static\(App\\Modules\\Scrum\\Models\\ScrumColumn\)\> but returns Illuminate\\Database\\Eloquent\\Builder\<App\\Modules\\Scrum\\Models\\ScrumColumn\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Modules/Scrum/Models/ScrumColumn.php
