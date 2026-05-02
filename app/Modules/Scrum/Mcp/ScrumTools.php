@@ -23,6 +23,7 @@ class ScrumTools implements McpToolInterface
             $this->getListSprintsToolDescription(),
             $this->getGetSprintToolDescription(),
             $this->getUpdateSprintToolDescription(),
+            $this->getDeleteSprintToolDescription(),
         ];
     }
 
@@ -34,6 +35,7 @@ class ScrumTools implements McpToolInterface
             'list_sprints' => $this->sprintList($params, $user),
             'get_sprint' => $this->sprintGet($params, $user),
             'update_sprint' => $this->sprintUpdate($params, $user),
+            'delete_sprint' => $this->sprintDelete($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -182,6 +184,25 @@ class ScrumTools implements McpToolInterface
         $sprint->loadCount('items');
 
         return $sprint->format();
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintDelete(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $sprint = $this->findSprint((string) ($params['identifier'] ?? ''), $user);
+
+        if (in_array($sprint->status, ['active', 'completed'], true)) {
+            throw ValidationException::withMessages([
+                'sprint' => ['Cannot delete a sprint that is active or completed. Cancel it first or wait for completion.'],
+            ]);
+        }
+
+        $sprint->delete();
+
+        return ['message' => 'Sprint deleted.'];
     }
 
     // ===== Helpers =====
@@ -367,6 +388,22 @@ class ScrumTools implements McpToolInterface
                     'start_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
                     'end_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
                     'capacity' => ['type' => ['integer', 'null']],
+                ],
+                'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getDeleteSprintToolDescription(): array
+    {
+        return [
+            'name' => 'delete_sprint',
+            'description' => 'Delete a sprint (refused if status is active or completed)',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
                 ],
                 'required' => ['identifier'],
             ],
