@@ -12,6 +12,7 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\User;
+use App\Core\Services\DependencyService;
 use App\Core\Support\Role;
 use App\Modules\Scrum\Models\Sprint;
 use App\Modules\Scrum\Models\SprintItem;
@@ -47,6 +48,7 @@ class ScrumTools implements McpToolInterface
             $this->getStartPlanningToolDescription(),
             $this->getAddToPlanningToolDescription(),
             $this->getRemoveFromPlanningToolDescription(),
+            $this->getValidateSprintPlanToolDescription(),
         ];
     }
 
@@ -73,6 +75,7 @@ class ScrumTools implements McpToolInterface
             'start_planning' => $this->planningStart($params, $user),
             'add_to_planning' => $this->planningAdd($params, $user),
             'remove_from_planning' => $this->planningRemove($params, $user),
+            'validate_sprint_plan' => $this->sprintValidatePlan($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -932,6 +935,172 @@ class ScrumTools implements McpToolInterface
         ];
     }
 
+    // ===== POIESIS-9: Sprint plan validation =====
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function sprintValidatePlan(array $params, User $user): array
+    {
+        $sprint = $this->findSprint((string) ($params['sprint_identifier'] ?? ''), $user);
+
+        /** @var Collection<int, SprintItem> $items */
+        $items = $sprint->items()->with(['artifact.artifactable'])->get();
+
+        $errors = [];
+        $warnings = [];
+
+        // RM-04: empty sprint short-circuits per-item checks (RM-05 / RM-06).
+        if ($items->isEmpty()) {
+            $errors[] = $this->collectEmptySprintError();
+        } else {
+            foreach ($this->collectMissingEstimationErrors($items) as $err) {
+                $errors[] = $err;
+            }
+            foreach ($this->collectBlockingDependencyErrors($items) as $err) {
+                $errors[] = $err;
+            }
+        }
+
+        $summary = $this->computePlanningSummary($sprint, $items);
+
+        // RM-07: over capacity
+        $overCapacity = $this->collectCapacityWarning($summary);
+        if ($overCapacity !== null) {
+            $warnings[] = $overCapacity;
+        }
+
+        // RM-08: missing goal (always evaluated)
+        $missingGoal = $this->collectGoalWarning($sprint);
+        if ($missingGoal !== null) {
+            $warnings[] = $missingGoal;
+        }
+
+        return [
+            'ok' => $errors === [],
+            'sprint_identifier' => $sprint->identifier,
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'summary' => [
+                'items_count' => $items->count(),
+                'engaged_points' => $summary['engaged_points'],
+                'capacity' => $summary['capacity'],
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function collectEmptySprintError(): array
+    {
+        return [
+            'code' => 'empty_sprint',
+            'message' => 'Sprint has no items. A sprint must contain at least one story or task.',
+            'severity' => 'error',
+        ];
+    }
+
+    /**
+     * @param  Collection<int, SprintItem>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function collectMissingEstimationErrors(Collection $items): array
+    {
+        $errors = [];
+        foreach ($items as $item) {
+            $artifactable = $item->artifact?->artifactable;
+            if (! $artifactable instanceof Story) {
+                continue;
+            }
+            if ($artifactable->story_points !== null) {
+                continue;
+            }
+            $errors[] = [
+                'code' => 'missing_estimation',
+                'message' => "Story {$artifactable->identifier} has no estimation (story_points is null).",
+                'severity' => 'error',
+                'item_identifier' => $artifactable->identifier,
+            ];
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param  Collection<int, SprintItem>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function collectBlockingDependencyErrors(Collection $items): array
+    {
+        /** @var DependencyService $dependencyService */
+        $dependencyService = app(DependencyService::class);
+        $errors = [];
+
+        foreach ($items as $item) {
+            /** @var Story|Task|null $artifactable */
+            $artifactable = $item->artifact?->artifactable;
+            if (! $artifactable instanceof Story && ! $artifactable instanceof Task) {
+                continue;
+            }
+            $blockers = $dependencyService->getDependencies($artifactable)['blocked_by'];
+            foreach ($blockers as $blocker) {
+                /** @var Story|Task $blocker */
+                $status = $blocker->statut;
+                if ($status === 'closed') {
+                    continue;
+                }
+                $itemIdentifier = (string) $artifactable->identifier;
+                $blockerIdentifier = (string) $blocker->identifier;
+                $errors[] = [
+                    'code' => 'blocking_dependency',
+                    'message' => "Item {$itemIdentifier} is blocked by {$blockerIdentifier} (status: {$status}).",
+                    'severity' => 'error',
+                    'item_identifier' => $itemIdentifier,
+                    'blocking_identifier' => $blockerIdentifier,
+                    'blocking_status' => $status,
+                ];
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param  array{capacity: int|null, engaged_points: int, ratio_engaged: float|null}  $summary
+     * @return array<string, mixed>|null
+     */
+    private function collectCapacityWarning(array $summary): ?array
+    {
+        $capacity = $summary['capacity'];
+        $engaged = $summary['engaged_points'];
+
+        if ($capacity === null || $capacity <= 0 || $engaged <= $capacity) {
+            return null;
+        }
+
+        return [
+            'code' => 'over_capacity',
+            'message' => "Sprint engages {$engaged} story points but capacity is {$capacity}.",
+            'severity' => 'warning',
+            'engaged_points' => $engaged,
+            'capacity' => $capacity,
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function collectGoalWarning(Sprint $sprint): ?array
+    {
+        if ($sprint->goal !== null && trim((string) $sprint->goal) !== '') {
+            return null;
+        }
+
+        return [
+            'code' => 'missing_goal',
+            'message' => 'Sprint has no goal defined. A sprint goal helps the team focus.',
+            'severity' => 'warning',
+        ];
+    }
+
     /**
      * @return array<int, string>
      */
@@ -1658,6 +1827,25 @@ class ScrumTools implements McpToolInterface
                     ],
                 ],
                 'required' => ['sprint_identifier', 'story_identifiers'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getValidateSprintPlanToolDescription(): array
+    {
+        return [
+            'name' => 'validate_sprint_plan',
+            'description' => 'Diagnose a sprint before start. Read-only. Returns { ok, errors[], warnings[], summary } covering: empty_sprint (error), missing_estimation (error, per story), blocking_dependency (error, per unresolved dependency), over_capacity (warning), missing_goal (warning). Does not block start_sprint — purely informational. Works on any sprint status.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'sprint_identifier' => [
+                        'type' => 'string',
+                        'description' => 'Sprint identifier (e.g. PROJ-S1).',
+                    ],
+                ],
+                'required' => ['sprint_identifier'],
             ],
         ];
     }
