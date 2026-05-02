@@ -40,6 +40,9 @@ class ScrumTools implements McpToolInterface
             $this->getListSprintItemsToolDescription(),
             $this->getListBacklogToolDescription(),
             $this->getReorderBacklogToolDescription(),
+            $this->getEstimateStoryToolDescription(),
+            $this->getMarkReadyToolDescription(),
+            $this->getMarkUnreadyToolDescription(),
         ];
     }
 
@@ -60,6 +63,9 @@ class ScrumTools implements McpToolInterface
             'list_sprint_items' => $this->sprintItemList($params, $user),
             'list_backlog' => $this->backlogList($params, $user),
             'reorder_backlog' => $this->backlogReorder($params, $user),
+            'estimate_story' => $this->storyEstimate($params, $user),
+            'mark_ready' => $this->storyMarkReady($params, $user),
+            'mark_unready' => $this->storyMarkUnready($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -660,6 +666,7 @@ class ScrumTools implements McpToolInterface
             'priorite' => $story->priorite,
             'tags' => $story->tags,
             'story_points' => $story->story_points,
+            'ready' => $story->ready,
             'rank' => $story->rank,
             'epic_identifier' => $story->epic->identifier,
             'created_at' => $story->created_at->toIso8601String(),
@@ -692,6 +699,163 @@ class ScrumTools implements McpToolInterface
             ->whereIn('artifactable_id', $storyIds)
             ->pluck('identifier')
             ->all();
+    }
+
+    // ===== POIESIS-7: Estimation & Definition of Ready =====
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function storyEstimate(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $story = $this->resolveStoryFromIdentifier(
+            (string) ($params['story_identifier'] ?? ''),
+            $user
+        );
+
+        $points = $this->normalizeStoryPoints(
+            $params['story_points'] ?? null,
+            exists: array_key_exists('story_points', $params)
+        );
+
+        DB::transaction(function () use ($story, $points) {
+            /** @var Story $locked */
+            $locked = Story::whereKey($story->id)->lockForUpdate()->firstOrFail();
+            $locked->story_points = $points;
+            $locked->save();
+        });
+
+        $story->refresh()->load('epic');
+
+        return $this->formatBacklogStory($story);
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function storyMarkReady(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $story = $this->resolveStoryFromIdentifier(
+            (string) ($params['story_identifier'] ?? ''),
+            $user
+        );
+
+        $this->assertReadyDoR($story);
+
+        DB::transaction(function () use ($story) {
+            /** @var Story $locked */
+            $locked = Story::whereKey($story->id)->lockForUpdate()->firstOrFail();
+            $this->assertReadyDoR($locked);
+
+            if ($locked->ready === true) {
+                return;
+            }
+
+            $locked->ready = true;
+            $locked->save();
+        });
+
+        $story->refresh()->load('epic');
+
+        return $this->formatBacklogStory($story);
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function storyMarkUnready(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $story = $this->resolveStoryFromIdentifier(
+            (string) ($params['story_identifier'] ?? ''),
+            $user
+        );
+
+        if ($story->ready === false) {
+            return $this->formatBacklogStory($story->load('epic'));
+        }
+
+        $story->ready = false;
+        $story->save();
+
+        $story->refresh()->load('epic');
+
+        return $this->formatBacklogStory($story);
+    }
+
+    private function resolveStoryFromIdentifier(string $identifier, User $user): Story
+    {
+        if (! preg_match('/^([A-Z0-9]+)-(\d+)$/', $identifier, $m)) {
+            throw ValidationException::withMessages([
+                'story_identifier' => ['Invalid story identifier format.'],
+            ]);
+        }
+
+        $project = Project::where('code', $m[1])->first();
+        if ($project === null) {
+            throw ValidationException::withMessages([
+                'story_identifier' => ['Story not found in this project.'],
+            ]);
+        }
+
+        $isMember = ProjectMember::where('project_id', $project->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if (! $isMember) {
+            throw ValidationException::withMessages([
+                'story_identifier' => ['Story not found in this project.'],
+            ]);
+        }
+
+        $model = Artifact::resolveIdentifier($identifier);
+        if (! $model instanceof Story || $model->epic->project_id !== $project->id) {
+            throw ValidationException::withMessages([
+                'story_identifier' => ['Story not found in this project.'],
+            ]);
+        }
+
+        return $model;
+    }
+
+    private function assertReadyDoR(Story $story): void
+    {
+        $missing = [];
+        if ($story->story_points === null) {
+            $missing[] = 'story_points';
+        }
+        if ($story->description === null || trim((string) $story->description) === '') {
+            $missing[] = 'description';
+        }
+
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'ready' => ['Story is not ready. Missing: '.implode(', ', $missing).'.'],
+            ]);
+        }
+    }
+
+    private function normalizeStoryPoints(mixed $value, bool $exists): int
+    {
+        if (! $exists || $value === null) {
+            throw ValidationException::withMessages([
+                'story_points' => ['story_points must be a non-negative integer.'],
+            ]);
+        }
+        if (! is_int($value) && ! (is_string($value) && ctype_digit($value))) {
+            throw ValidationException::withMessages([
+                'story_points' => ['story_points must be a non-negative integer.'],
+            ]);
+        }
+        $int = (int) $value;
+        if ($int < 0) {
+            throw ValidationException::withMessages([
+                'story_points' => ['story_points must be a non-negative integer.'],
+            ]);
+        }
+
+        return $int;
     }
 
     // ===== Helpers =====
@@ -1055,6 +1219,55 @@ class ScrumTools implements McpToolInterface
                     ],
                 ],
                 'required' => ['project_code', 'ordered_identifiers'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getEstimateStoryToolDescription(): array
+    {
+        return [
+            'name' => 'estimate_story',
+            'description' => 'Set or update the story_points estimation of a story (any non-negative integer; no Fibonacci constraint).',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'story_identifier' => ['type' => 'string', 'description' => 'Story identifier (e.g. PROJ-12)'],
+                    'story_points' => ['type' => 'integer', 'description' => 'Non-negative integer (>= 0)'],
+                ],
+                'required' => ['story_identifier', 'story_points'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getMarkReadyToolDescription(): array
+    {
+        return [
+            'name' => 'mark_ready',
+            'description' => 'Mark a story as ready (Definition of Ready). Requires story_points set and a non-empty description. Idempotent if already ready.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'story_identifier' => ['type' => 'string', 'description' => 'Story identifier (e.g. PROJ-12)'],
+                ],
+                'required' => ['story_identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getMarkUnreadyToolDescription(): array
+    {
+        return [
+            'name' => 'mark_unready',
+            'description' => 'Mark a story as not ready. Always allowed (no DoR check). Idempotent if already not ready.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'story_identifier' => ['type' => 'string', 'description' => 'Story identifier (e.g. PROJ-12)'],
+                ],
+                'required' => ['story_identifier'],
             ],
         ];
     }
