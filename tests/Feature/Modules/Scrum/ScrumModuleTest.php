@@ -32,11 +32,13 @@ class ScrumModuleTest extends TestCase
         $this->assertSame([], $module->dependencies());
     }
 
-    public function test_module_exposes_no_mcp_tools_yet(): void
+    public function test_module_exposes_list_and_get_sprint_tools(): void
     {
         $tools = (new ScrumTools)->tools();
 
-        $this->assertSame([], $tools);
+        $names = array_column($tools, 'name');
+        $this->assertContains('list_sprints', $names);
+        $this->assertContains('get_sprint', $names);
     }
 
     public function test_scrum_tools_execute_throws_for_any_tool(): void
