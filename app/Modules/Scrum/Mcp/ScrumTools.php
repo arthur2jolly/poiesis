@@ -38,6 +38,8 @@ class ScrumTools implements McpToolInterface
             $this->getAddToSprintToolDescription(),
             $this->getRemoveFromSprintToolDescription(),
             $this->getListSprintItemsToolDescription(),
+            $this->getListBacklogToolDescription(),
+            $this->getReorderBacklogToolDescription(),
         ];
     }
 
@@ -56,6 +58,8 @@ class ScrumTools implements McpToolInterface
             'add_to_sprint' => $this->sprintItemAdd($params, $user),
             'remove_from_sprint' => $this->sprintItemRemove($params, $user),
             'list_sprint_items' => $this->sprintItemList($params, $user),
+            'list_backlog' => $this->backlogList($params, $user),
+            'reorder_backlog' => $this->backlogReorder($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -480,6 +484,216 @@ class ScrumTools implements McpToolInterface
         return $model;
     }
 
+    // ===== Backlog =====
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function backlogList(array $params, User $user): array
+    {
+        $project = $this->findProjectWithAccess((string) ($params['project_code'] ?? ''), $user);
+
+        if (array_key_exists('status', $params) && $params['status'] !== null
+            && ! in_array($params['status'], config('core.statuts'), true)) {
+            throw ValidationException::withMessages(['status' => ['Invalid story status.']]);
+        }
+        if (array_key_exists('priority', $params) && $params['priority'] !== null
+            && ! in_array($params['priority'], config('core.priorities'), true)) {
+            throw ValidationException::withMessages(['priority' => ['Invalid story priority.']]);
+        }
+
+        $epic = null;
+        if (! empty($params['epic_identifier'])) {
+            $epicId = (string) $params['epic_identifier'];
+            if (! preg_match('/^[A-Z0-9]+-\d+$/', $epicId)) {
+                throw ValidationException::withMessages(['epic_identifier' => ['Invalid epic identifier format.']]);
+            }
+            $resolved = Artifact::resolveIdentifier($epicId);
+            if (! $resolved instanceof Epic || $resolved->project_id !== $project->id) {
+                throw ValidationException::withMessages(['epic_identifier' => ['Epic not found in this project.']]);
+            }
+            $epic = $resolved;
+        }
+
+        $perPage = min(max((int) ($params['per_page'] ?? 25), 1), 100);
+        $page = max((int) ($params['page'] ?? 1), 1);
+
+        $query = Story::whereHas('epic', fn ($q) => $q->where('project_id', $project->id))->with('epic');
+
+        if (! empty($params['status'])) {
+            $query->where('statut', $params['status']);
+        }
+        if (! empty($params['priority'])) {
+            $query->where('priorite', $params['priority']);
+        }
+        if (! empty($params['tags']) && is_array($params['tags'])) {
+            foreach ($params['tags'] as $tag) {
+                $query->whereJsonContains('tags', $tag);
+            }
+        }
+        if ($epic !== null) {
+            $query->where('epic_id', $epic->id);
+        }
+
+        if (array_key_exists('in_sprint', $params) && $params['in_sprint'] !== null) {
+            $sprintActiveStoryIds = DB::table('scrum_sprint_items')
+                ->join('scrum_sprints', 'scrum_sprints.id', '=', 'scrum_sprint_items.sprint_id')
+                ->join('artifacts', 'artifacts.id', '=', 'scrum_sprint_items.artifact_id')
+                ->whereIn('scrum_sprints.status', ['planned', 'active'])
+                ->where('scrum_sprints.project_id', $project->id)
+                ->where('artifacts.artifactable_type', Story::class)
+                ->pluck('artifacts.artifactable_id');
+
+            if ((bool) $params['in_sprint'] === true) {
+                $query->whereIn('id', $sprintActiveStoryIds);
+            } else {
+                $query->whereNotIn('id', $sprintActiveStoryIds);
+            }
+        }
+
+        $query->orderByRaw('(rank IS NULL), rank ASC, created_at ASC');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'data' => $paginator->map(fn (Story $s) => $this->formatBacklogStory($s))->all(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function backlogReorder(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $project = $this->findProjectWithAccess((string) ($params['project_code'] ?? ''), $user);
+
+        $ordered = $params['ordered_identifiers'] ?? [];
+        if (! is_array($ordered) || $ordered === []) {
+            throw ValidationException::withMessages([
+                'ordered_identifiers' => ['ordered_identifiers cannot be empty.'],
+            ]);
+        }
+
+        // 1. Format + project membership of each identifier
+        foreach ($ordered as $id) {
+            if (! is_string($id) || ! preg_match('/^([A-Z0-9]+)-(\d+)$/', $id, $m) || $m[1] !== $project->code) {
+                throw ValidationException::withMessages([
+                    'ordered_identifiers' => ["Identifier '{$id}' does not belong to project '{$project->code}'."],
+                ]);
+            }
+        }
+
+        // 2. No duplicates
+        $duplicates = array_diff_assoc($ordered, array_unique($ordered));
+        if ($duplicates !== []) {
+            $first = reset($duplicates);
+            throw ValidationException::withMessages([
+                'ordered_identifiers' => ["Duplicate identifier in ordered_identifiers: '{$first}'."],
+            ]);
+        }
+
+        // 3. Resolve each identifier into a Story belonging to this project
+        $resolvedIds = [];
+        foreach ($ordered as $id) {
+            $story = $this->resolveStoryInProject((string) $id, $project->id);
+            $resolvedIds[] = $story->id;
+        }
+
+        // 4. Coverage exacte des stories non-closed du projet
+        $existingNonClosed = Story::whereHas(
+            'epic',
+            fn ($q) => $q->where('project_id', $project->id)
+        )->where('statut', '!=', 'closed')->pluck('id')->all();
+
+        $missing = array_diff($existingNonClosed, $resolvedIds);
+        $unexpected = array_diff($resolvedIds, $existingNonClosed);
+
+        if ($missing !== [] || $unexpected !== []) {
+            $missingIdentifiers = $this->identifiersForStoryIds(array_values($missing));
+            $unexpectedIdentifiers = $this->identifiersForStoryIds(array_values($unexpected));
+            throw ValidationException::withMessages([
+                'ordered_identifiers' => [
+                    'Reorder coverage mismatch. Missing: ['
+                    .implode(', ', $missingIdentifiers).']. Unexpected: ['
+                    .implode(', ', $unexpectedIdentifiers).'].',
+                ],
+            ]);
+        }
+
+        // 5. Atomic write
+        DB::transaction(function () use ($resolvedIds) {
+            Story::whereIn('id', $resolvedIds)->lockForUpdate()->get();
+            foreach ($resolvedIds as $index => $storyId) {
+                Story::where('id', $storyId)->update(['rank' => $index]);
+            }
+        });
+
+        // 6. Return refreshed backlog
+        $backlog = $this->backlogList([
+            'project_code' => $project->code,
+            'per_page' => count($resolvedIds),
+            'page' => 1,
+        ], $user);
+
+        return [
+            'message' => 'Backlog reordered.',
+            'count' => count($resolvedIds),
+            'data' => $backlog['data'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function formatBacklogStory(Story $story): array
+    {
+        return [
+            'identifier' => $story->identifier,
+            'titre' => $story->titre,
+            'description' => $story->description,
+            'statut' => $story->statut,
+            'priorite' => $story->priorite,
+            'tags' => $story->tags,
+            'story_points' => $story->story_points,
+            'rank' => $story->rank,
+            'epic_identifier' => $story->epic->identifier,
+            'created_at' => $story->created_at->toIso8601String(),
+            'updated_at' => $story->updated_at->toIso8601String(),
+        ];
+    }
+
+    private function resolveStoryInProject(string $identifier, string $projectId): Story
+    {
+        $model = Artifact::resolveIdentifier($identifier);
+        if (! $model instanceof Story || $model->epic->project_id !== $projectId) {
+            throw ValidationException::withMessages([
+                'ordered_identifiers' => ["Story '{$identifier}' not found in this project."],
+            ]);
+        }
+
+        return $model;
+    }
+
+    /** @param array<int, mixed> $storyIds
+     * @return array<int, string>
+     */
+    private function identifiersForStoryIds(array $storyIds): array
+    {
+        if ($storyIds === []) {
+            return [];
+        }
+
+        return Artifact::where('artifactable_type', Story::class)
+            ->whereIn('artifactable_id', $storyIds)
+            ->pluck('identifier')
+            ->all();
+    }
+
     // ===== Helpers =====
 
     private function assertCanManage(User $user): void
@@ -797,6 +1011,50 @@ class ScrumTools implements McpToolInterface
                     'sprint_identifier' => ['type' => 'string'],
                 ],
                 'required' => ['sprint_identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getListBacklogToolDescription(): array
+    {
+        return [
+            'name' => 'list_backlog',
+            'description' => 'List the project backlog (stories ordered by rank ASC NULLS LAST, then created_at ASC). Supports filters by status, priority, tags, epic, and sprint membership.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'project_code' => ['type' => 'string'],
+                    'status' => ['type' => 'string', 'enum' => config('core.statuts'), 'description' => 'Filter by story status'],
+                    'priority' => ['type' => 'string', 'enum' => config('core.priorities'), 'description' => 'Filter by story priority'],
+                    'tags' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'AND filter on tags'],
+                    'epic_identifier' => ['type' => 'string', 'description' => 'Restrict to a single epic (e.g. PROJ-1)'],
+                    'in_sprint' => ['type' => 'boolean', 'description' => 'true = in a planned/active sprint, false = otherwise'],
+                    'page' => ['type' => 'integer'],
+                    'per_page' => ['type' => 'integer', 'description' => 'Default 25, max 100'],
+                ],
+                'required' => ['project_code'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getReorderBacklogToolDescription(): array
+    {
+        return [
+            'name' => 'reorder_backlog',
+            'description' => 'Reorder the project backlog. Must cover exactly all non-closed stories. Index 0 = highest priority.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'project_code' => ['type' => 'string'],
+                    'ordered_identifiers' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string'],
+                        'description' => 'Ordered list of story identifiers (index 0 = highest priority). Must cover exactly all non-closed stories of the project.',
+                    ],
+                ],
+                'required' => ['project_code', 'ordered_identifiers'],
             ],
         ];
     }
