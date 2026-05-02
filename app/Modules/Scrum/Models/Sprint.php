@@ -101,4 +101,24 @@ class Sprint extends Model
     {
         return $this->hasMany(SprintItem::class)->orderBy('position');
     }
+
+    /** @return array<string, mixed> */
+    public function format(): array
+    {
+        return [
+            'id' => $this->id,
+            'identifier' => $this->identifier,
+            'project_code' => $this->project()->withoutGlobalScope('tenant')->value('code'),
+            'name' => $this->name,
+            'goal' => $this->goal,
+            'start_date' => $this->start_date->toDateString(),
+            'end_date' => $this->end_date->toDateString(),
+            'capacity' => $this->capacity,
+            'status' => $this->status,
+            'items_count' => $this->items_count ?? null,
+            'closed_at' => $this->closed_at?->toIso8601String(),
+            'created_at' => $this->created_at->toIso8601String(),
+            'updated_at' => $this->updated_at->toIso8601String(),
+        ];
+    }
 }
