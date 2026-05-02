@@ -11,6 +11,7 @@ use App\Core\Models\User;
 use App\Core\Support\Role;
 use App\Modules\Scrum\Models\Sprint;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ScrumTools implements McpToolInterface
@@ -24,6 +25,9 @@ class ScrumTools implements McpToolInterface
             $this->getGetSprintToolDescription(),
             $this->getUpdateSprintToolDescription(),
             $this->getDeleteSprintToolDescription(),
+            $this->getStartSprintToolDescription(),
+            $this->getCloseSprintToolDescription(),
+            $this->getCancelSprintToolDescription(),
         ];
     }
 
@@ -36,6 +40,9 @@ class ScrumTools implements McpToolInterface
             'get_sprint' => $this->sprintGet($params, $user),
             'update_sprint' => $this->sprintUpdate($params, $user),
             'delete_sprint' => $this->sprintDelete($params, $user),
+            'start_sprint' => $this->sprintStart($params, $user),
+            'close_sprint' => $this->sprintClose($params, $user),
+            'cancel_sprint' => $this->sprintCancel($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -205,6 +212,88 @@ class ScrumTools implements McpToolInterface
         return ['message' => 'Sprint deleted.'];
     }
 
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintStart(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $sprint = $this->findSprint((string) ($params['identifier'] ?? ''), $user);
+
+        return DB::transaction(function () use ($sprint) {
+            /** @var Sprint $locked */
+            $locked = Sprint::whereKey($sprint->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'planned') {
+                throw ValidationException::withMessages([
+                    'sprint' => ["Cannot start a sprint in status '{$locked->status}'. Only sprints in status 'planned' can be started."],
+                ]);
+            }
+
+            $this->assertNoActiveSprintInProject($locked->project_id, $locked->id);
+
+            $locked->status = 'active';
+            $locked->save();
+            $locked->loadCount('items');
+
+            return $locked->format();
+        });
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintClose(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $sprint = $this->findSprint((string) ($params['identifier'] ?? ''), $user);
+
+        return DB::transaction(function () use ($sprint) {
+            /** @var Sprint $locked */
+            $locked = Sprint::whereKey($sprint->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'active') {
+                throw ValidationException::withMessages([
+                    'sprint' => ["Cannot close a sprint in status '{$locked->status}'. Only sprints in status 'active' can be closed."],
+                ]);
+            }
+
+            $locked->status = 'completed';
+            $locked->closed_at = Carbon::now();
+            $locked->save();
+            $locked->loadCount('items');
+
+            return $locked->format();
+        });
+    }
+
+    /** @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function sprintCancel(array $params, User $user): array
+    {
+        $this->assertCanManage($user);
+        $sprint = $this->findSprint((string) ($params['identifier'] ?? ''), $user);
+
+        return DB::transaction(function () use ($sprint) {
+            /** @var Sprint $locked */
+            $locked = Sprint::whereKey($sprint->id)->lockForUpdate()->firstOrFail();
+
+            if (! in_array($locked->status, ['planned', 'active'], true)) {
+                throw ValidationException::withMessages([
+                    'sprint' => ["Cannot cancel a sprint in status '{$locked->status}'. Only sprints in status 'planned' or 'active' can be cancelled."],
+                ]);
+            }
+
+            $locked->status = 'cancelled';
+            // closed_at intentionally NOT touched (RM-05.4 / QO-2)
+            $locked->save();
+            $locked->loadCount('items');
+
+            return $locked->format();
+        });
+    }
+
     // ===== Helpers =====
 
     private function assertCanManage(User $user): void
@@ -212,6 +301,23 @@ class ScrumTools implements McpToolInterface
         if (! Role::canCrudArtifacts($user->role)) {
             throw ValidationException::withMessages([
                 'sprint' => ['You do not have permission to manage sprints.'],
+            ]);
+        }
+    }
+
+    private function assertNoActiveSprintInProject(string $projectId, string $excludeSprintId): void
+    {
+        /** @var Sprint|null $existing */
+        $existing = Sprint::where('project_id', $projectId)
+            ->where('status', 'active')
+            ->where('id', '!=', $excludeSprintId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($existing !== null) {
+            $code = (string) Project::whereKey($projectId)->value('code');
+            throw ValidationException::withMessages([
+                'sprint' => ["Project '{$code}' already has an active sprint ({$existing->identifier}). Close or cancel it before starting a new one."],
             ]);
         }
     }
@@ -400,6 +506,54 @@ class ScrumTools implements McpToolInterface
         return [
             'name' => 'delete_sprint',
             'description' => 'Delete a sprint (refused if status is active or completed)',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getStartSprintToolDescription(): array
+    {
+        return [
+            'name' => 'start_sprint',
+            'description' => 'Start a sprint (planned -> active). Fails if another sprint is already active in the project.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getCloseSprintToolDescription(): array
+    {
+        return [
+            'name' => 'close_sprint',
+            'description' => 'Close an active sprint (active -> completed). Sets closed_at to current UTC timestamp.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getCancelSprintToolDescription(): array
+    {
+        return [
+            'name' => 'cancel_sprint',
+            'description' => 'Cancel a sprint (planned|active -> cancelled). Items remain attached. closed_at is not set.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
