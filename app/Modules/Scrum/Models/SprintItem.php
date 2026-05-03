@@ -70,7 +70,7 @@ class SprintItem extends Model
                 'title' => $artifactable->titre,
                 'status' => $artifactable->statut,
                 'story_points' => $artifactable->story_points,
-                'ready' => null,
+                'ready' => $artifactable->ready,
             ];
         } elseif ($artifactable instanceof Task) {
             $payload['artifact'] = [

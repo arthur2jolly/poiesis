@@ -13,6 +13,7 @@ use App\Modules\Scrum\Models\ScrumColumn;
 use App\Modules\Scrum\Models\Sprint;
 use App\Modules\Scrum\Models\SprintItem;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,15 @@ class ScrumController extends Controller
         $project = $this->project($request);
         $sprint = $this->resolveSprint($project, $identifier);
         $sprint->load(['items.artifact.artifactable'])->loadCount('items');
+
+        $stories = $sprint->items
+            ->map(fn (SprintItem $item) => $item->artifact?->artifactable)
+            ->filter(fn ($artifactable) => $artifactable instanceof Story)
+            ->values();
+
+        (new EloquentCollection($stories->all()))->load([
+            'tasks' => fn ($query) => $query->with('artifact')->orderBy('ordre'),
+        ]);
 
         return view('scrum::sprints.show', [
             'project' => $project,
@@ -126,6 +136,8 @@ class ScrumController extends Controller
             ->orderBy('position')
             ->get();
 
+        $this->loadStoryTasksForBoard($columns);
+
         $sprints = Sprint::where('project_id', $project->id)
             ->orderByDesc('sprint_number')
             ->get();
@@ -135,6 +147,21 @@ class ScrumController extends Controller
             'sprint' => $sprint,
             'sprints' => $sprints,
             'columns' => $columns,
+        ]);
+    }
+
+    /** @param EloquentCollection<int, ScrumColumn> $columns */
+    private function loadStoryTasksForBoard(EloquentCollection $columns): void
+    {
+        $stories = $columns
+            ->flatMap(fn (ScrumColumn $column) => $column->placements)
+            ->map(fn ($placement) => $placement->sprintItem->artifact?->artifactable)
+            ->filter(fn ($artifactable) => $artifactable instanceof Story)
+            ->unique('id')
+            ->values();
+
+        (new EloquentCollection($stories->all()))->load([
+            'tasks' => fn ($query) => $query->with('artifact')->orderBy('ordre'),
         ]);
     }
 
@@ -186,6 +213,17 @@ class ScrumController extends Controller
             'status' => $artifactable instanceof Story || $artifactable instanceof Task ? $artifactable->statut : null,
             'points' => $artifactable instanceof Story ? $artifactable->story_points : null,
             'ready' => $artifactable instanceof Story ? $artifactable->ready : null,
+            'tasks' => $artifactable instanceof Story
+                ? $artifactable->tasks->map(fn (Task $task) => [
+                    'identifier' => $task->identifier,
+                    'title' => $task->titre,
+                    'description' => $task->description,
+                    'status' => $task->statut,
+                    'priority' => $task->priorite,
+                    'estimate' => $task->estimation_temps,
+                    'tags' => $task->tags ?? [],
+                ])->all()
+                : [],
         ];
     }
 }

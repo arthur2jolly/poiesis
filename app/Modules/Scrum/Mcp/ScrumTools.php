@@ -2013,8 +2013,14 @@ class ScrumTools implements McpToolInterface
         return [
             'project_code' => $project->code,
             'columns' => $columns->map(function (ScrumColumn $col): array {
+                $visiblePlacements = $col->placements
+                    ->filter(fn (ScrumItemPlacement $placement) => $this->isReadyStoryPlacement($placement))
+                    ->values();
                 $base = $col->format();
-                $base['placements'] = $col->placements
+                $base['placement_count'] = $visiblePlacements->count();
+                $base['at_warning'] = $col->limit_warning !== null && $visiblePlacements->count() >= $col->limit_warning;
+                $base['at_hard_limit'] = $col->limit_hard !== null && $visiblePlacements->count() >= $col->limit_hard;
+                $base['placements'] = $visiblePlacements
                     ->map(fn (ScrumItemPlacement $p) => $p->format())
                     ->all();
 
@@ -2629,7 +2635,9 @@ class ScrumTools implements McpToolInterface
             $query->whereHas('sprintItem', fn ($q) => $q->where('sprint_id', $sprintId));
         }
 
-        $placements = $query->get();
+        $placements = $query->get()
+            ->filter(fn (ScrumItemPlacement $placement) => $this->isReadyStoryPlacement($placement))
+            ->values();
         $count = $placements->count();
 
         return [
@@ -2643,6 +2651,13 @@ class ScrumTools implements McpToolInterface
             'at_hard_limit' => $column->limit_hard !== null && $count >= $column->limit_hard,
             'items' => $placements->map(fn (ScrumItemPlacement $p) => $p->format())->all(),
         ];
+    }
+
+    private function isReadyStoryPlacement(ScrumItemPlacement $placement): bool
+    {
+        $artifactable = $placement->sprintItem->artifact?->artifactable;
+
+        return $artifactable instanceof Story && $artifactable->ready === true;
     }
 
     private function findSprintItemByArtifactIdentifier(

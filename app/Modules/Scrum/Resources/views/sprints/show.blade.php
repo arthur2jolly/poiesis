@@ -35,6 +35,7 @@
                         <td class="px-4 py-3">
                             <div class="font-medium">{{ $item['identifier'] }}</div>
                             <div class="text-sm text-slate-600">{{ $item['title'] }}</div>
+                            @include('scrum::components.story-task-summary', ['tasks' => $item['tasks']])
                         </td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $item['kind'] }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $item['status'] }}</td>

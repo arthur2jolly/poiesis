@@ -27,6 +27,9 @@
     <div class="border-b border-slate-200 bg-white">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <nav class="flex gap-6" aria-label="Scrum">
+                @if(in_array('dashboard', $project->modules ?? [], true))
+                    <a href="{{ route('dashboard.project', $project->code) }}" class="border-b-2 border-transparent px-1 py-3 text-sm font-medium text-slate-500 hover:text-slate-900">Projet</a>
+                @endif
                 <a href="{{ route('scrum.sprints', $project->code) }}" class="border-b-2 px-1 py-3 text-sm font-medium {{ request()->routeIs('scrum.sprints') || request()->routeIs('scrum.sprint') ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-900' }}">Sprints</a>
                 <a href="{{ route('scrum.backlog', $project->code) }}" class="border-b-2 px-1 py-3 text-sm font-medium {{ request()->routeIs('scrum.backlog') ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-900' }}">Backlog</a>
                 <a href="{{ route('scrum.board', $project->code) }}" class="border-b-2 px-1 py-3 text-sm font-medium {{ request()->routeIs('scrum.board') || request()->routeIs('scrum.board.sprint') ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-900' }}">Board</a>

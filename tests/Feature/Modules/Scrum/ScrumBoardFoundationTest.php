@@ -141,7 +141,7 @@ class ScrumBoardFoundationTest extends TestCase
         ]);
 
         $epic = Epic::factory()->create(['project_id' => $project->id]);
-        $story = Story::factory()->create(['epic_id' => $epic->id]);
+        $story = Story::factory()->create(['epic_id' => $epic->id, 'ready' => true]);
         $artifact = Artifact::where('artifactable_type', Story::class)
             ->where('artifactable_id', $story->id)
             ->firstOrFail();
@@ -448,6 +448,51 @@ class ScrumBoardFoundationTest extends TestCase
         $this->assertSame('In progress', $inProgress['name']);
         $this->assertSame(1, $inProgress['placement_count']);
         $this->assertCount(1, $inProgress['placements']);
+    }
+
+    public function test_board_get_excludes_non_ready_stories_from_columns(): void
+    {
+        $this->buildBoard([['name' => 'To do']]);
+
+        $column = ScrumColumn::where('project_id', $this->project->id)->firstOrFail();
+        $sprint = Sprint::create([
+            'tenant_id' => $this->project->tenant_id,
+            'project_id' => $this->project->id,
+            'name' => 'Sprint Test',
+            'start_date' => '2026-05-01',
+            'end_date' => '2026-05-15',
+            'status' => 'active',
+        ]);
+        $epic = Epic::factory()->create(['project_id' => $this->project->id]);
+        $readyStory = Story::factory()->create(['epic_id' => $epic->id, 'titre' => 'Ready story', 'ready' => true]);
+        $notReadyStory = Story::factory()->create(['epic_id' => $epic->id, 'titre' => 'Not ready story', 'ready' => false]);
+
+        $readyItem = SprintItem::create([
+            'sprint_id' => $sprint->id,
+            'artifact_id' => $readyStory->artifact->id,
+            'position' => 0,
+        ]);
+        $notReadyItem = SprintItem::create([
+            'sprint_id' => $sprint->id,
+            'artifact_id' => $notReadyStory->artifact->id,
+            'position' => 1,
+        ]);
+        ScrumItemPlacement::create(['sprint_item_id' => $readyItem->id, 'column_id' => $column->id, 'position' => 0]);
+        ScrumItemPlacement::create(['sprint_item_id' => $notReadyItem->id, 'column_id' => $column->id, 'position' => 1]);
+
+        $result = $this->extractResult($this->mcpCall('scrum_board_get', ['project_code' => 'BRD']));
+
+        $this->assertSame(1, $result['columns'][0]['placement_count']);
+        $this->assertCount(1, $result['columns'][0]['placements']);
+        $this->assertSame('Ready story', $result['columns'][0]['placements'][0]['sprint_item']['artifact']['title']);
+        $this->assertTrue($result['columns'][0]['placements'][0]['sprint_item']['artifact']['ready']);
+
+        $columnItems = $this->extractResult($this->mcpCall('scrum_column_items', ['column_id' => $column->id]));
+
+        $this->assertSame(1, $columnItems['count']);
+        $this->assertCount(1, $columnItems['items']);
+        $this->assertSame('Ready story', $columnItems['items'][0]['sprint_item']['artifact']['title']);
+        $this->assertTrue($columnItems['items'][0]['sprint_item']['artifact']['ready']);
     }
 
     // ===== Case 18: board_get accessible to non-CRUD member =====
