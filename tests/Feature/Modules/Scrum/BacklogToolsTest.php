@@ -150,6 +150,21 @@ it('T-01: list_backlog returns stories in rank order', function () {
     expect($result['data'][0])->toHaveKeys(['identifier', 'titre', 'statut', 'priorite', 'rank', 'epic_identifier']);
 });
 
+it('T-01b: list_backlog excludes closed stories from the Scrum backlog', function () {
+    $ctx = backlogSetup('BL01B');
+    $epic = backlogEpic($ctx['project']);
+
+    Story::factory()->create(['epic_id' => $epic->id, 'statut' => 'open']);
+    $closed = Story::factory()->create(['epic_id' => $epic->id, 'statut' => 'closed']);
+
+    $result = backlogOk(mcpBacklog('list_backlog', [
+        'project_code' => $ctx['project']->code,
+    ], $ctx['manager_token']));
+
+    expect($result['meta']['total'])->toBe(1);
+    expect(array_column($result['data'], 'identifier'))->not->toContain($closed->identifier);
+});
+
 // ============================================================
 // T-02 — reorder_backlog happy path
 // ============================================================
@@ -336,6 +351,15 @@ it('T-07: status=open filter excludes draft and closed stories', function () {
 
     expect($result['meta']['total'])->toBe(1);
     expect($result['data'][0]['statut'])->toBe('open');
+});
+
+it('T-07b: status=closed is not a valid Scrum backlog filter', function () {
+    $ctx = backlogSetup('BL07B');
+
+    backlogErr(mcpBacklog('list_backlog', [
+        'project_code' => $ctx['project']->code,
+        'status' => 'closed',
+    ], $ctx['manager_token']), 'Invalid story status.');
 });
 
 // ============================================================

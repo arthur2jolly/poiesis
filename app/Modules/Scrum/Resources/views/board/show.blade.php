@@ -25,7 +25,7 @@
             @foreach($columns as $column)
                 @php
                     $placements = $column->placements
-                        ->filter(fn ($placement) => $sprint === null || $placement->sprintItem->sprint_id === $sprint->id)
+                        ->filter(fn ($placement) => $sprint !== null && $placement->sprintItem->sprint_id === $sprint->id)
                         ->filter(fn ($placement) => $placement->sprintItem->artifact?->artifactable instanceof \App\Core\Models\Story)
                         ->filter(fn ($placement) => $placement->sprintItem->artifact->artifactable->ready === true);
                 @endphp

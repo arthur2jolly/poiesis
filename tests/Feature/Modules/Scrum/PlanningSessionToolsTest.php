@@ -318,11 +318,41 @@ it('P-14: start_planning rejects malformed sprint identifier', function () {
     ], $ctx['manager_token']), 'Invalid sprint identifier format.');
 });
 
+it('P-15: start_planning excludes draft stories even when they are ready', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project']);
+    $openStory = planReadyStory($ctx['project']);
+    $draftStory = planReadyStory($ctx['project'], ['statut' => 'draft']);
+
+    $result = planOk(mcpPlan('start_planning', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+
+    $identifiers = array_column($result['ready_backlog'], 'identifier');
+    expect($identifiers)->toContain($openStory->identifier);
+    expect($identifiers)->not->toContain($draftStory->identifier);
+});
+
+it('P-16: start_planning limits ready_backlog to 100 stories', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project']);
+
+    for ($i = 0; $i < 101; $i++) {
+        planReadyStory($ctx['project'], ['rank' => $i]);
+    }
+
+    $result = planOk(mcpPlan('start_planning', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+
+    expect($result['ready_backlog'])->toHaveCount(100);
+});
+
 // ============================================================
 // add_to_planning — happy path
 // ============================================================
 
-it('P-15: add_to_planning happy path: 3 ready stories engaged, summary updated', function () {
+it('P-17: add_to_planning happy path: 3 ready stories engaged, summary updated', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'planned', 20);
     $s1 = planReadyStory($ctx['project'], ['story_points' => 3]);
@@ -342,7 +372,7 @@ it('P-15: add_to_planning happy path: 3 ready stories engaged, summary updated',
     expect(SprintItem::count())->toBe(3);
 });
 
-it('P-16: add_to_planning refuses batch if one story is not ready', function () {
+it('P-18: add_to_planning refuses batch if one story is not ready', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -359,7 +389,7 @@ it('P-16: add_to_planning refuses batch if one story is not ready', function () 
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-17: add_to_planning refuses batch if one story belongs to another project', function () {
+it('P-19: add_to_planning refuses batch if one story belongs to another project', function () {
     $ctxA = planSetup('PJNA');
     $sprint = planSprint($ctxA['project']);
     $s1 = planReadyStory($ctxA['project']);
@@ -382,7 +412,7 @@ it('P-17: add_to_planning refuses batch if one story belongs to another project'
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-18: add_to_planning refuses batch if one story already in another sprint with mention', function () {
+it('P-20: add_to_planning refuses batch if one story already in another sprint with mention', function () {
     $ctx = planSetup();
     $sprint1 = planSprint($ctx['project']);
     $sprint2 = planSprint($ctx['project']);
@@ -406,7 +436,7 @@ it('P-18: add_to_planning refuses batch if one story already in another sprint w
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-19: add_to_planning refuses batch if one story already in this sprint', function () {
+it('P-21: add_to_planning refuses batch if one story already in this sprint', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -428,7 +458,7 @@ it('P-19: add_to_planning refuses batch if one story already in this sprint', fu
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-20: add_to_planning refuses batch if one identifier resolves to a Task', function () {
+it('P-22: add_to_planning refuses batch if one identifier resolves to a Task', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -444,7 +474,7 @@ it('P-20: add_to_planning refuses batch if one identifier resolves to a Task', f
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-21: add_to_planning refuses batch if one identifier resolves to an Epic', function () {
+it('P-23: add_to_planning refuses batch if one identifier resolves to an Epic', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -460,7 +490,7 @@ it('P-21: add_to_planning refuses batch if one identifier resolves to an Epic', 
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-22: add_to_planning refuses batch if one story is closed', function () {
+it('P-24: add_to_planning refuses batch if one story is closed', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -476,7 +506,7 @@ it('P-22: add_to_planning refuses batch if one story is closed', function () {
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-23: add_to_planning rejects duplicate identifiers', function () {
+it('P-25: add_to_planning rejects duplicate identifiers', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -487,7 +517,7 @@ it('P-23: add_to_planning rejects duplicate identifiers', function () {
     ], $ctx['manager_token']), 'Duplicate identifier in story_identifiers');
 });
 
-it('P-24: add_to_planning rejects empty story_identifiers', function () {
+it('P-26: add_to_planning rejects empty story_identifiers', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
 
@@ -497,7 +527,7 @@ it('P-24: add_to_planning rejects empty story_identifiers', function () {
     ], $ctx['manager_token']), 'story_identifiers cannot be empty');
 });
 
-it('P-25: add_to_planning rejects sprint in status active', function () {
+it('P-27: add_to_planning rejects sprint in status active', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'active');
     $s1 = planReadyStory($ctx['project']);
@@ -508,7 +538,7 @@ it('P-25: add_to_planning rejects sprint in status active', function () {
     ], $ctx['manager_token']), "Cannot add to planning on a sprint in status 'active'");
 });
 
-it('P-26: add_to_planning rejects sprint in status completed', function () {
+it('P-28: add_to_planning rejects sprint in status completed', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'completed');
     $s1 = planReadyStory($ctx['project']);
@@ -519,7 +549,7 @@ it('P-26: add_to_planning rejects sprint in status completed', function () {
     ], $ctx['manager_token']), "Cannot add to planning on a sprint in status 'completed'");
 });
 
-it('P-27: add_to_planning is atomic: 5 valid + 1 invalid → DB unchanged', function () {
+it('P-29: add_to_planning is atomic: 5 valid + 1 invalid → DB unchanged', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $stories = [];
@@ -541,7 +571,7 @@ it('P-27: add_to_planning is atomic: 5 valid + 1 invalid → DB unchanged', func
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-28: add_to_planning rejects user without manage permission', function () {
+it('P-30: add_to_planning rejects user without manage permission', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -552,7 +582,7 @@ it('P-28: add_to_planning rejects user without manage permission', function () {
     ], $ctx['viewer_token']), 'You do not have permission to manage sprints.');
 });
 
-it('P-29: add_to_planning accepts story with story_points=0 (spike)', function () {
+it('P-31: add_to_planning accepts story with story_points=0 (spike)', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'planned', 10);
     $s1 = planReadyStory($ctx['project'], ['story_points' => 0]);
@@ -566,7 +596,7 @@ it('P-29: add_to_planning accepts story with story_points=0 (spike)', function (
     expect($result['engaged_points'])->toBe(0);
 });
 
-it('P-30: add_to_planning lists all violations in a single error message', function () {
+it('P-32: add_to_planning lists all violations in a single error message', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $notReady1 = planStory($ctx['project'], ['statut' => 'open', 'ready' => false, 'story_points' => null]);
@@ -587,7 +617,7 @@ it('P-30: add_to_planning lists all violations in a single error message', funct
     expect($msg)->toContain('Cannot add stories to planning. Violations:');
 });
 
-it('P-31: add_to_planning appends positions starting at max+1', function () {
+it('P-33: add_to_planning appends positions starting at max+1', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -604,11 +634,52 @@ it('P-31: add_to_planning appends positions starting at max+1', function () {
     expect($positions)->toBe([0, 1, 2]);
 });
 
+it('P-34: add_to_planning refuses a draft story even when ready=true', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project']);
+    $story = planReadyStory($ctx['project'], ['statut' => 'draft']);
+
+    planErr(mcpPlan('add_to_planning', [
+        'sprint_identifier' => $sprint->identifier,
+        'story_identifiers' => [$story->identifier],
+    ], $ctx['manager_token']), 'must be open to plan');
+});
+
+it('P-35: add_to_planning accepts a story from a cancelled sprint', function () {
+    $ctx = planSetup();
+    $cancelledSprint = planSprint($ctx['project']);
+    $targetSprint = planSprint($ctx['project']);
+    $story = planReadyStory($ctx['project']);
+
+    planOk(mcpPlan('add_to_sprint', [
+        'sprint_identifier' => $cancelledSprint->identifier,
+        'item_identifier' => $story->identifier,
+    ], $ctx['manager_token']));
+    planOk(mcpPlan('cancel_sprint', [
+        'identifier' => $cancelledSprint->identifier,
+    ], $ctx['manager_token']));
+
+    $snapshot = planOk(mcpPlan('start_planning', [
+        'sprint_identifier' => $targetSprint->identifier,
+    ], $ctx['manager_token']));
+    $readyIdentifiers = array_column($snapshot['ready_backlog'], 'identifier');
+    expect($readyIdentifiers)->toContain($story->identifier);
+
+    $result = planOk(mcpPlan('add_to_planning', [
+        'sprint_identifier' => $targetSprint->identifier,
+        'story_identifiers' => [$story->identifier],
+    ], $ctx['manager_token']));
+
+    expect($result['added_count'])->toBe(1);
+    expect(SprintItem::count())->toBe(1);
+    expect(SprintItem::first()?->sprint_id)->toBe($targetSprint->id);
+});
+
 // ============================================================
 // remove_from_planning — happy path
 // ============================================================
 
-it('P-32: remove_from_planning happy path: 2 attached stories removed', function () {
+it('P-36: remove_from_planning happy path: 2 attached stories removed', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'planned', 20);
     $s1 = planReadyStory($ctx['project'], ['story_points' => 5]);
@@ -632,7 +703,7 @@ it('P-32: remove_from_planning happy path: 2 attached stories removed', function
     expect(SprintItem::count())->toBe(0);
 });
 
-it('P-33: remove_from_planning refuses batch if one story not attached', function () {
+it('P-37: remove_from_planning refuses batch if one story not attached', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -653,7 +724,7 @@ it('P-33: remove_from_planning refuses batch if one story not attached', functio
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-34: remove_from_planning refuses if story attached to another sprint', function () {
+it('P-38: remove_from_planning refuses if story attached to another sprint', function () {
     $ctx = planSetup();
     $sprint1 = planSprint($ctx['project']);
     $sprint2 = planSprint($ctx['project']);
@@ -674,7 +745,7 @@ it('P-34: remove_from_planning refuses if story attached to another sprint', fun
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-35: remove_from_planning rejects sprint in status active', function () {
+it('P-39: remove_from_planning rejects sprint in status active', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'active');
     $s1 = planReadyStory($ctx['project']);
@@ -685,7 +756,7 @@ it('P-35: remove_from_planning rejects sprint in status active', function () {
     ], $ctx['manager_token']), "Cannot remove from planning on a sprint in status 'active'");
 });
 
-it('P-36: remove_from_planning has no DoR check: story without story_points can be removed', function () {
+it('P-40: remove_from_planning has no DoR check: story without story_points can be removed', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     // Force attach via add_to_sprint (permissive, no DoR)
@@ -707,7 +778,7 @@ it('P-36: remove_from_planning has no DoR check: story without story_points can 
     expect(SprintItem::count())->toBe(0);
 });
 
-it('P-37: remove_from_planning is atomic: 3 valid + 1 invalid → DB unchanged', function () {
+it('P-41: remove_from_planning is atomic: 3 valid + 1 invalid → DB unchanged', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -730,7 +801,7 @@ it('P-37: remove_from_planning is atomic: 3 valid + 1 invalid → DB unchanged',
     expect(SprintItem::count())->toBe($countBefore);
 });
 
-it('P-38: remove_from_planning rejects duplicate identifiers', function () {
+it('P-42: remove_from_planning rejects duplicate identifiers', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -746,7 +817,7 @@ it('P-38: remove_from_planning rejects duplicate identifiers', function () {
     ], $ctx['manager_token']), 'Duplicate identifier in story_identifiers');
 });
 
-it('P-39: remove_from_planning rejects empty story_identifiers', function () {
+it('P-43: remove_from_planning rejects empty story_identifiers', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
 
@@ -760,7 +831,7 @@ it('P-39: remove_from_planning rejects empty story_identifiers', function () {
 // Cross-tool integration
 // ============================================================
 
-it('P-40: start_planning then add_to_planning then start_planning reflects updated engaged_points', function () {
+it('P-44: start_planning then add_to_planning then start_planning reflects updated engaged_points', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'planned', 20);
     $s1 = planReadyStory($ctx['project'], ['story_points' => 5]);
@@ -783,7 +854,7 @@ it('P-40: start_planning then add_to_planning then start_planning reflects updat
     expect($after['ratio_engaged'])->toBe(0.4);
 });
 
-it('P-41: add_to_planning then start_sprint then add_to_planning fails (sprint now active)', function () {
+it('P-45: add_to_planning then start_sprint then add_to_planning fails (sprint now active)', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -805,7 +876,7 @@ it('P-41: add_to_planning then start_sprint then add_to_planning fails (sprint n
     ], $ctx['manager_token']), "Cannot add to planning on a sprint in status 'active'");
 });
 
-it('P-42: mark_unready on engaged story creates accepted drift, no auto-removal', function () {
+it('P-46: mark_unready on engaged story creates accepted drift, no auto-removal', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -830,7 +901,7 @@ it('P-42: mark_unready on engaged story creates accepted drift, no auto-removal'
 // Module activation
 // ============================================================
 
-it('P-43: planning tools absent from tools/list when module not active', function () {
+it('P-47: planning tools absent from tools/list when module not active', function () {
     $tenant = createTenant();
     app(TenantManager::class)->setTenant($tenant);
 
@@ -862,7 +933,7 @@ it('P-43: planning tools absent from tools/list when module not active', functio
     expect($names)->not->toContain('remove_from_planning');
 });
 
-it('P-44: tools/list returns 19 tools when scrum module is active', function () {
+it('P-48: tools/list returns 19 tools when scrum module is active', function () {
     $ctx = planSetup('PACT');
 
     $response = test()->postJson('/mcp', [

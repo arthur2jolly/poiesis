@@ -11,6 +11,8 @@ use App\Core\Models\Task;
 use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\TenantManager;
+use App\Modules\Scrum\Models\ScrumColumn;
+use App\Modules\Scrum\Models\ScrumItemPlacement;
 use App\Modules\Scrum\Models\Sprint;
 use App\Modules\Scrum\Models\SprintItem;
 use Illuminate\Testing\TestResponse;
@@ -274,7 +276,7 @@ it('closes an active sprint and stamps closed_at', function () {
     expect($fresh->closed_at->timestamp)->toBeGreaterThanOrEqual($before->timestamp);
 });
 
-it('does not close sprint stories or tasks when closing the sprint', function () {
+it('closes sprint stories tasks and board placements when closing the sprint', function () {
     $ctx = lifecycleSetup();
     $sprint = makeSprint($ctx['project'], 'active');
     $epic = Epic::factory()->create(['project_id' => $ctx['project']->id]);
@@ -282,16 +284,47 @@ it('does not close sprint stories or tasks when closing the sprint', function ()
         'epic_id' => $epic->id,
         'statut' => 'open',
     ]);
-    $task = Task::factory()->create([
+    $storyTask = Task::factory()->create([
         'project_id' => $ctx['project']->id,
         'story_id' => $story->id,
         'statut' => 'open',
     ]);
+    $standaloneTask = Task::factory()->standalone()->create([
+        'project_id' => $ctx['project']->id,
+        'statut' => 'draft',
+    ]);
+    $inProgressColumn = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'In Progress',
+        'position' => 0,
+    ]);
+    $doneColumn = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'Done',
+        'position' => 1,
+    ]);
 
-    SprintItem::create([
+    $storySprintItem = SprintItem::create([
         'sprint_id' => $sprint->id,
         'artifact_id' => $story->artifact->id,
         'position' => 0,
+    ]);
+    $taskSprintItem = SprintItem::create([
+        'sprint_id' => $sprint->id,
+        'artifact_id' => $standaloneTask->artifact->id,
+        'position' => 1,
+    ]);
+    ScrumItemPlacement::create([
+        'sprint_item_id' => $storySprintItem->id,
+        'column_id' => $inProgressColumn->id,
+        'position' => 0,
+    ]);
+    ScrumItemPlacement::create([
+        'sprint_item_id' => $taskSprintItem->id,
+        'column_id' => $inProgressColumn->id,
+        'position' => 1,
     ]);
 
     assertLifecycleSuccess(
@@ -299,8 +332,11 @@ it('does not close sprint stories or tasks when closing the sprint', function ()
     );
 
     expect($sprint->fresh()->status)->toBe('completed');
-    expect($story->fresh()->statut)->toBe('open');
-    expect($task->fresh()->statut)->toBe('open');
+    expect($story->fresh()->statut)->toBe('closed');
+    expect($storyTask->fresh()->statut)->toBe('closed');
+    expect($standaloneTask->fresh()->statut)->toBe('closed');
+    expect(ScrumItemPlacement::where('column_id', $doneColumn->id)->count())->toBe(2);
+    expect(ScrumItemPlacement::where('column_id', $inProgressColumn->id)->count())->toBe(0);
 });
 
 // ============================================================

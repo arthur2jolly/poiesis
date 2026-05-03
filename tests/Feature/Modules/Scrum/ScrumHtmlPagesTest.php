@@ -36,6 +36,13 @@ class ScrumHtmlPagesTest extends TestCase
             'rank' => 1,
             'ready' => false,
         ]);
+        Story::factory()->create([
+            'epic_id' => $epic->id,
+            'titre' => 'Story done hors backlog',
+            'rank' => 2,
+            'ready' => true,
+            'statut' => 'closed',
+        ]);
         $firstTask = Task::factory()->create([
             'project_id' => $project->id,
             'story_id' => $story->id,
@@ -99,7 +106,9 @@ class ScrumHtmlPagesTest extends TestCase
             ->get("/scrum/{$project->code}/backlog")
             ->assertOk()
             ->assertSee('Afficher le backlog Scrum')
-            ->assertSee('ready');
+            ->assertSee('ready')
+            ->assertDontSee('Story done hors backlog')
+            ->assertDontSee('<option value="closed"', false);
 
         $this->actingAs($user, 'web')
             ->get("/scrum/{$project->code}/board")
@@ -153,6 +162,45 @@ class ScrumHtmlPagesTest extends TestCase
             ->get("/scrum/{$project->code}/sprints")
             ->assertOk()
             ->assertSee('<meta http-equiv="refresh" content="30">', false);
+    }
+
+    public function test_active_board_is_empty_when_project_has_no_active_sprint(): void
+    {
+        [$user, $project, $sprint] = $this->scrumProject(['modules' => ['scrum']]);
+        $epic = Epic::factory()->create(['project_id' => $project->id]);
+        $story = Story::factory()->create([
+            'epic_id' => $epic->id,
+            'titre' => 'Story du sprint termine',
+            'ready' => true,
+        ]);
+        $column = ScrumColumn::create([
+            'tenant_id' => $project->tenant_id,
+            'project_id' => $project->id,
+            'name' => 'Done',
+            'position' => 0,
+        ]);
+        $item = SprintItem::create([
+            'sprint_id' => $sprint->id,
+            'artifact_id' => $story->artifact->id,
+            'position' => 0,
+        ]);
+        $column->placements()->create([
+            'sprint_item_id' => $item->id,
+            'position' => 0,
+        ]);
+        $sprint->update(['status' => 'completed']);
+
+        $this->actingAs($user, 'web')
+            ->get("/scrum/{$project->code}/board")
+            ->assertOk()
+            ->assertSee('Aucun sprint actif selectionne.')
+            ->assertSee('Aucun item.')
+            ->assertDontSee('Story du sprint termine');
+
+        $this->actingAs($user, 'web')
+            ->get("/scrum/{$project->code}/board/{$sprint->identifier}")
+            ->assertOk()
+            ->assertSee('Story du sprint termine');
     }
 
     public function test_scrum_pages_link_back_to_dashboard_when_dashboard_is_active(): void

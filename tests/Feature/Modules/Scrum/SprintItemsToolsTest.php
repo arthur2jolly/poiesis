@@ -302,7 +302,7 @@ it('T-10: item from another project is rejected', function () {
     assertItemsError(mcpItemsCall('add_to_sprint', [
         'sprint_identifier' => $sprint->identifier,
         'item_identifier' => $storyB->identifier,
-    ], $ctx['manager_token']), 'Item does not belong to the same project as the sprint.');
+    ], $ctx['manager_token']), 'Item not found.');
 });
 
 // ============================================================
@@ -329,7 +329,7 @@ it('T-11: item from another tenant is not found', function () {
     assertItemsError(mcpItemsCall('add_to_sprint', [
         'sprint_identifier' => $sprint->identifier,
         'item_identifier' => $storyBIdentifier,
-    ], $ctxA['manager_token']), 'Item does not belong to the same project as the sprint.');
+    ], $ctxA['manager_token']), 'Item not found.');
 });
 
 // ============================================================
@@ -493,6 +493,36 @@ it('T-20: draft story can be added to sprint without auto-transition', function 
 
     expect($result['artifact']['status'])->toBe('draft');
     expect($story->fresh()->statut)->toBe('draft');
+});
+
+it('T-20b: add list and remove do not transition story or task statuses', function () {
+    $ctx = itemsSetup();
+    $sprint = makeSprintWithStatus($ctx['project']);
+    $story = makeStory($ctx['project'], ['statut' => 'draft']);
+    $task = makeStandaloneTask($ctx['project'], ['statut' => 'open']);
+
+    assertItemsSuccess(mcpItemsCall('add_to_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $story->identifier,
+    ], $ctx['manager_token']));
+    assertItemsSuccess(mcpItemsCall('add_to_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $task->identifier,
+    ], $ctx['manager_token']));
+    assertItemsSuccess(mcpItemsCall('list_sprint_items', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+    assertItemsSuccess(mcpItemsCall('remove_from_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $story->identifier,
+    ], $ctx['manager_token']));
+    assertItemsSuccess(mcpItemsCall('remove_from_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $task->identifier,
+    ], $ctx['manager_token']));
+
+    expect($story->fresh()->statut)->toBe('draft');
+    expect($task->fresh()->statut)->toBe('open');
 });
 
 // ============================================================
@@ -679,6 +709,26 @@ it('T-29: listing a completed sprint is allowed', function () {
     expect($result['meta']['total'])->toBe(1);
 });
 
+it('T-29b: listing a cancelled sprint is allowed', function () {
+    $ctx = itemsSetup();
+    $sprint = makeSprintWithStatus($ctx['project']);
+    $story = makeStory($ctx['project']);
+
+    assertItemsSuccess(mcpItemsCall('add_to_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $story->identifier,
+    ], $ctx['manager_token']));
+
+    $sprint->update(['status' => 'cancelled']);
+
+    $result = assertItemsSuccess(mcpItemsCall('list_sprint_items', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+
+    expect($result['meta']['total'])->toBe(1);
+    expect($result['data'][0]['artifact']['identifier'])->toBe($story->identifier);
+});
+
 // ============================================================
 // T-30 — list cascade après delete
 // ============================================================
@@ -769,6 +819,24 @@ it('T-33: sprint item tools are absent when scrum module is not active for the s
     expect($names)->not->toContain('add_to_sprint');
     expect($names)->not->toContain('remove_from_sprint');
     expect($names)->not->toContain('list_sprint_items');
+});
+
+it('T-33b: sprint item tools fail when scrum module is inactive for the sprint identifier project', function () {
+    $ctx = itemsSetup('NOITM');
+    $ctx['project']->update(['modules' => []]);
+    $sprint = makeSprintWithStatus($ctx['project']);
+    $story = makeStory($ctx['project']);
+
+    foreach ([
+        ['add_to_sprint', ['sprint_identifier' => $sprint->identifier, 'item_identifier' => $story->identifier]],
+        ['remove_from_sprint', ['sprint_identifier' => $sprint->identifier, 'item_identifier' => $story->identifier]],
+        ['list_sprint_items', ['sprint_identifier' => $sprint->identifier]],
+    ] as [$tool, $arguments]) {
+        assertItemsError(
+            mcpItemsCall($tool, $arguments, $ctx['manager_token']),
+            "Module 'scrum' is not active for project 'NOITM'."
+        );
+    }
 });
 
 // ============================================================

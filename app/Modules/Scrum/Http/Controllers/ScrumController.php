@@ -85,6 +85,7 @@ class ScrumController extends Controller
             ->all();
 
         $stories = Story::whereHas('epic', fn (Builder $q) => $q->where('project_id', $project->id))
+            ->where('statut', '!=', 'closed')
             ->with('epic')
             ->when($filters['statut'] !== '', fn (Builder $q) => $q->where('statut', $filters['statut']))
             ->when($filters['priorite'] !== '', fn (Builder $q) => $q->where('priorite', $filters['priorite']))
@@ -106,6 +107,10 @@ class ScrumController extends Controller
             'stories' => $stories,
             'epics' => $epics,
             'filters' => $filters,
+            'statuses' => array_values(array_filter(
+                config('core.statuts', []),
+                fn (string $status): bool => $status !== 'closed'
+            )),
             'storiesInSprints' => $storiesInSprints,
         ]);
     }

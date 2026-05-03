@@ -317,10 +317,83 @@ class ScrumTools implements McpToolInterface
             $locked->status = 'completed';
             $locked->closed_at = Carbon::now();
             $locked->save();
+            $this->closeSprintArtifacts($locked);
+            $this->moveSprintPlacementsToDone($locked);
             $locked->loadCount('items');
 
             return $locked->format();
         });
+    }
+
+    private function closeSprintArtifacts(Sprint $sprint): void
+    {
+        $items = $sprint->items()->with(['artifact.artifactable'])->get();
+
+        foreach ($items as $item) {
+            $artifactable = $item->artifact?->artifactable;
+
+            if ($artifactable instanceof Story) {
+                foreach ($artifactable->tasks()->get() as $task) {
+                    if ($task instanceof Task) {
+                        $this->closeWorkItem($task);
+                    }
+                }
+                $this->closeWorkItem($artifactable);
+            } elseif ($artifactable instanceof Task) {
+                $this->closeWorkItem($artifactable);
+            }
+        }
+    }
+
+    private function closeWorkItem(Story|Task $item): void
+    {
+        if ($item->statut === 'closed') {
+            return;
+        }
+
+        if ($item->statut === 'draft') {
+            $item->transitionStatus('open');
+        }
+
+        $item->transitionStatus('closed');
+    }
+
+    private function moveSprintPlacementsToDone(Sprint $sprint): void
+    {
+        /** @var ScrumColumn|null $doneColumn */
+        $doneColumn = ScrumColumn::where('project_id', $sprint->project_id)
+            ->where('name', 'Done')
+            ->first();
+
+        if (! $doneColumn instanceof ScrumColumn) {
+            return;
+        }
+
+        $placements = ScrumItemPlacement::whereHas(
+            'sprintItem',
+            fn ($query) => $query->where('sprint_id', $sprint->id)
+        )->get();
+
+        $sourceColumnIds = $placements
+            ->pluck('column_id')
+            ->push($doneColumn->id)
+            ->unique()
+            ->values();
+
+        $nextPosition = ScrumItemPlacement::where('column_id', $doneColumn->id)
+            ->whereDoesntHave('sprintItem', fn ($query) => $query->where('sprint_id', $sprint->id))
+            ->max('position');
+        $position = $nextPosition === null ? 0 : ((int) $nextPosition) + 1;
+
+        foreach ($placements as $placement) {
+            $placement->column_id = $doneColumn->id;
+            $placement->position = $position++;
+            $placement->save();
+        }
+
+        foreach ($sourceColumnIds as $columnId) {
+            $this->recompactColumnPositions((string) $columnId);
+        }
     }
 
     /** @param array<string, mixed> $params
@@ -366,9 +439,9 @@ class ScrumTools implements McpToolInterface
             ]);
         }
 
-        $artifactable = $this->resolveSprintItemArtifact(
+        $artifactRow = $this->resolveSprintItemArtifact(
             (string) ($params['item_identifier'] ?? ''),
-            $sprint->project_id
+            $sprint
         );
 
         $position = null;
@@ -381,13 +454,8 @@ class ScrumTools implements McpToolInterface
             $position = $params['position'];
         }
 
-        return DB::transaction(function () use ($sprint, $artifactable, $position) {
+        return DB::transaction(function () use ($sprint, $artifactRow, $position) {
             Sprint::whereKey($sprint->id)->lockForUpdate()->firstOrFail();
-
-            /** @var Artifact $artifactRow */
-            $artifactRow = Artifact::where('artifactable_id', $artifactable->getKey())
-                ->where('artifactable_type', $artifactable->getMorphClass())
-                ->firstOrFail();
 
             $existing = SprintItem::where('artifact_id', $artifactRow->id)->first();
             if ($existing !== null) {
@@ -440,19 +508,10 @@ class ScrumTools implements McpToolInterface
             ]);
         }
 
-        $artifactable = Artifact::resolveIdentifier((string) ($params['item_identifier'] ?? ''));
-        if ($artifactable === null) {
-            throw ValidationException::withMessages(['item' => ['Item not found.']]);
-        }
-
-        /** @var Artifact|null $artifactRow */
-        $artifactRow = Artifact::where('artifactable_id', $artifactable->getKey())
-            ->where('artifactable_type', $artifactable->getMorphClass())
-            ->first();
-
-        if (! $artifactRow instanceof Artifact) {
-            throw ValidationException::withMessages(['item' => ['Item not found.']]);
-        }
+        $artifactRow = $this->resolveSprintItemArtifact(
+            (string) ($params['item_identifier'] ?? ''),
+            $sprint
+        );
 
         $item = SprintItem::where('sprint_id', $sprint->id)
             ->where('artifact_id', $artifactRow->id)
@@ -487,7 +546,7 @@ class ScrumTools implements McpToolInterface
      *
      * Returns the artifactable model (Story | Task).
      */
-    private function resolveSprintItemArtifact(string $identifier, string $projectId): Model
+    private function resolveSprintItemArtifact(string $identifier, Sprint $sprint): Artifact
     {
         $model = Artifact::resolveIdentifier($identifier);
 
@@ -514,13 +573,24 @@ class ScrumTools implements McpToolInterface
             throw ValidationException::withMessages(['item' => ['Item not found.']]);
         }
 
-        if ($itemProjectId !== $projectId) {
+        if ($itemProjectId !== $sprint->project_id) {
             throw ValidationException::withMessages([
-                'item' => ['Item does not belong to the same project as the sprint.'],
+                'item' => ['Item not found.'],
             ]);
         }
 
-        return $model;
+        /** @var Artifact|null $artifactRow */
+        $artifactRow = Artifact::where('artifactable_id', $model->getKey())
+            ->where('artifactable_type', $model->getMorphClass())
+            ->where('tenant_id', $sprint->tenant_id)
+            ->where('project_id', $sprint->project_id)
+            ->first();
+
+        if (! $artifactRow instanceof Artifact) {
+            throw ValidationException::withMessages(['item' => ['Item not found.']]);
+        }
+
+        return $artifactRow;
     }
 
     // ===== Backlog =====
@@ -533,7 +603,7 @@ class ScrumTools implements McpToolInterface
         $project = $this->findProjectWithAccess((string) ($params['project_code'] ?? ''), $user);
 
         if (array_key_exists('status', $params) && $params['status'] !== null
-            && ! in_array($params['status'], config('core.statuts'), true)) {
+            && ! in_array($params['status'], $this->backlogStatuses(), true)) {
             throw ValidationException::withMessages(['status' => ['Invalid story status.']]);
         }
         if (array_key_exists('priority', $params) && $params['priority'] !== null
@@ -557,7 +627,9 @@ class ScrumTools implements McpToolInterface
         $perPage = min(max((int) ($params['per_page'] ?? 25), 1), 100);
         $page = max((int) ($params['page'] ?? 1), 1);
 
-        $query = Story::whereHas('epic', fn ($q) => $q->where('project_id', $project->id))->with('epic');
+        $query = Story::whereHas('epic', fn ($q) => $q->where('project_id', $project->id))
+            ->where('statut', '!=', 'closed')
+            ->with('epic');
 
         if (! empty($params['status'])) {
             $query->where('statut', $params['status']);
@@ -603,6 +675,15 @@ class ScrumTools implements McpToolInterface
                 'last_page' => $paginator->lastPage(),
             ],
         ];
+    }
+
+    /** @return array<int, string> */
+    private function backlogStatuses(): array
+    {
+        return array_values(array_filter(
+            config('core.statuts'),
+            fn (string $status): bool => $status !== 'closed'
+        ));
     }
 
     /** @param array<string, mixed> $params
@@ -883,6 +964,13 @@ class ScrumTools implements McpToolInterface
             $artifactRows = Artifact::where('artifactable_type', Story::class)
                 ->whereIn('artifactable_id', $storyIds)
                 ->get()->keyBy('artifactable_id');
+            $artifactIds = $artifactRows->pluck('id')->all();
+
+            SprintItem::whereIn('artifact_id', $artifactIds)
+                ->whereIn('sprint_id', Sprint::where('project_id', $sprint->project_id)
+                    ->whereNotIn('status', ['planned', 'active'])
+                    ->select('id'))
+                ->delete();
 
             $created = [];
             foreach (array_values($stories) as $i => $story) {
@@ -969,7 +1057,7 @@ class ScrumTools implements McpToolInterface
         $sprint = $this->findSprint((string) ($params['sprint_identifier'] ?? ''), $user);
 
         /** @var Collection<int, SprintItem> $items */
-        $items = $sprint->items()->with(['artifact.artifactable'])->get();
+        $items = $sprint->items()->with(['artifact.artifactable'])->orderBy('position')->get();
 
         $errors = [];
         $warnings = [];
@@ -1058,6 +1146,7 @@ class ScrumTools implements McpToolInterface
         /** @var DependencyService $dependencyService */
         $dependencyService = app(DependencyService::class);
         $errors = [];
+        $sprintPositions = $this->collectSprintArtifactPositions($items);
 
         foreach ($items as $item) {
             /** @var Story|Task|null $artifactable */
@@ -1070,6 +1159,9 @@ class ScrumTools implements McpToolInterface
                 /** @var Story|Task $blocker */
                 $status = $blocker->statut;
                 if ($status === 'closed') {
+                    continue;
+                }
+                if ($this->isDependencySequencedInsideSprint($artifactable, $blocker, $sprintPositions)) {
                     continue;
                 }
                 $itemIdentifier = (string) $artifactable->identifier;
@@ -1086,6 +1178,42 @@ class ScrumTools implements McpToolInterface
         }
 
         return $errors;
+    }
+
+    /**
+     * @param  Collection<int, SprintItem>  $items
+     * @return array<string, int>
+     */
+    private function collectSprintArtifactPositions(Collection $items): array
+    {
+        $positions = [];
+
+        foreach ($items as $item) {
+            $artifactable = $item->artifact?->artifactable;
+            if (! $artifactable instanceof Model) {
+                continue;
+            }
+
+            $positions[$this->artifactableSprintKey($artifactable)] = $item->position;
+        }
+
+        return $positions;
+    }
+
+    /** @param array<string, int> $sprintPositions */
+    private function isDependencySequencedInsideSprint(Model $item, Model $blocker, array $sprintPositions): bool
+    {
+        $itemPosition = $sprintPositions[$this->artifactableSprintKey($item)] ?? null;
+        $blockerPosition = $sprintPositions[$this->artifactableSprintKey($blocker)] ?? null;
+
+        return $itemPosition !== null
+            && $blockerPosition !== null
+            && $blockerPosition < $itemPosition;
+    }
+
+    private function artifactableSprintKey(Model $model): string
+    {
+        return $model->getMorphClass().':'.(string) $model->getKey();
     }
 
     /**
@@ -1191,6 +1319,11 @@ class ScrumTools implements McpToolInterface
             if ($mode === 'add') {
                 if ($model->statut === 'closed') {
                     $violations[] = "{$id}: cannot plan a closed story.";
+
+                    continue;
+                }
+                if ($model->statut !== 'open') {
+                    $violations[] = "{$id}: must be open to plan.";
 
                     continue;
                 }
@@ -1729,7 +1862,7 @@ class ScrumTools implements McpToolInterface
                 'type' => 'object',
                 'properties' => [
                     'project_code' => ['type' => 'string'],
-                    'status' => ['type' => 'string', 'enum' => config('core.statuts'), 'description' => 'Filter by story status'],
+                    'status' => ['type' => 'string', 'enum' => $this->backlogStatuses(), 'description' => 'Filter by story status'],
                     'priority' => ['type' => 'string', 'enum' => config('core.priorities'), 'description' => 'Filter by story priority'],
                     'tags' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'AND filter on tags'],
                     'epic_identifier' => ['type' => 'string', 'description' => 'Restrict to a single epic (e.g. PROJ-1)'],
@@ -1833,7 +1966,7 @@ class ScrumTools implements McpToolInterface
     {
         return [
             'name' => 'add_to_planning',
-            'description' => 'Engage one or more stories in the sprint planning. All stories must be ready=true, status=open, in the same project, and not in any sprint. Atomic: a single violation refuses the whole batch. Sprint must be in status planned.',
+            'description' => 'Engage one or more stories in the sprint planning. All stories must be ready=true, status=open, in the same project, and not in any planned/active sprint. Atomic: a single violation refuses the whole batch. Sprint must be in status planned.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [

@@ -414,8 +414,27 @@ it('V-16: story blocked by 2 items (1 closed, 1 open) → 1 error for the open o
     expect($err['blocking_identifier'])->toBe($openBlocker->identifier);
 });
 
-it('V-17: story blocked by item also in the sprint → error reported (QO-8)', function () {
+it('V-17: story blocked by an earlier item in the same sprint → no blocking_dependency error', function () {
     $ctx = vspSetup('VP17');
+    $sprint = vspSprint($ctx['project'], 'planned', 20, 'Goal');
+    $story = vspStory($ctx['project'], ['story_points' => 5, 'statut' => 'open']);
+    $blocker = vspStory($ctx['project'], ['story_points' => 3, 'statut' => 'open']);
+    vspAttach($sprint, $blocker);
+    vspAttach($sprint, $story);
+
+    $depService = app(DependencyService::class);
+    $depService->addDependency($story, $blocker);
+
+    $result = vspOk(mcpVsp('validate_sprint_plan', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+
+    $depErrors = array_filter($result['errors'], fn ($e) => $e['code'] === 'blocking_dependency');
+    expect($depErrors)->toBe([]);
+});
+
+it('V-17b: story blocked by a later item in the same sprint → error reported', function () {
+    $ctx = vspSetup('VP17B');
     $sprint = vspSprint($ctx['project'], 'planned', 20, 'Goal');
     $story = vspStory($ctx['project'], ['story_points' => 5, 'statut' => 'open']);
     $blocker = vspStory($ctx['project'], ['story_points' => 3, 'statut' => 'open']);
