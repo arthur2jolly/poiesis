@@ -84,6 +84,27 @@ class ScrumHtmlPagesTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_dashboard_project_navigation_links_to_scrum_when_module_is_active(): void
+    {
+        [$user, $project] = $this->scrumProject(['modules' => ['dashboard', 'scrum']]);
+
+        $this->actingAs($user, 'web')
+            ->get("/dashboard/{$project->code}")
+            ->assertOk()
+            ->assertSee('Scrum')
+            ->assertSee("/scrum/{$project->code}/sprints", false);
+    }
+
+    public function test_scrum_pages_auto_refresh_every_thirty_seconds(): void
+    {
+        [$user, $project] = $this->scrumProject(['modules' => ['scrum']]);
+
+        $this->actingAs($user, 'web')
+            ->get("/scrum/{$project->code}/sprints")
+            ->assertOk()
+            ->assertSee('<meta http-equiv="refresh" content="30">', false);
+    }
+
     public function test_scrum_module_does_not_import_dashboard_or_kanban_code(): void
     {
         $files = [
