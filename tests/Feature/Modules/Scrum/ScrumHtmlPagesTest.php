@@ -49,6 +49,7 @@ class ScrumHtmlPagesTest extends TestCase
             'story_id' => $story->id,
             'titre' => 'Verifier le rendu des taches',
             'ordre' => 1,
+            'statut' => 'closed',
         ]);
         $column = ScrumColumn::create([
             'tenant_id' => $project->tenant_id,
@@ -89,6 +90,7 @@ class ScrumHtmlPagesTest extends TestCase
             ->assertSee($firstTask->identifier)
             ->assertSee('Preparer les donnees de sprint')
             ->assertSee('Details')
+            ->assertSee('Tache terminee')
             ->assertSee('Inclure les taches enfants dans le rendu')
             ->assertSee($secondTask->identifier)
             ->assertSee('Verifier le rendu des taches');
@@ -106,6 +108,7 @@ class ScrumHtmlPagesTest extends TestCase
             ->assertSee('Afficher le backlog Scrum')
             ->assertSee('Taches')
             ->assertSee('Tache en cours de developpement')
+            ->assertSee('Tache terminee')
             ->assertSee($firstTask->identifier)
             ->assertSee('Preparer les donnees de sprint')
             ->assertSee($secondTask->identifier)

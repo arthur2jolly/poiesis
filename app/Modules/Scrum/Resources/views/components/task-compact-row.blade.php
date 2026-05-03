@@ -2,9 +2,12 @@
 
 <li class="px-3 py-2 text-sm">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="min-w-0">
-            <span class="font-mono text-indigo-700">{{ $task['identifier'] }}</span>
-            <span class="text-slate-800">{{ $task['title'] }}</span>
+        <div class="flex min-w-0 items-center gap-2">
+            @include('scrum::components.task-status-indicator', ['status' => $task['status'], 'size' => 'md'])
+            <div class="min-w-0">
+                <span class="font-mono text-indigo-700">{{ $task['identifier'] }}</span>
+                <span class="text-slate-800">{{ $task['title'] }}</span>
+            </div>
         </div>
         <div class="flex shrink-0 flex-wrap gap-2 text-xs text-slate-500">
             <span class="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200">{{ $task['status'] }}</span>
