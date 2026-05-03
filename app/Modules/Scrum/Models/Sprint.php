@@ -68,15 +68,19 @@ class Sprint extends Model
     /**
      * Generate the next sprint_number for a project, concurrent-safe.
      *
-     * Wraps a SELECT max(sprint_number) ... FOR UPDATE inside a transaction
-     * to serialize concurrent inserts in the same project.
+     * Locks the parent project row before reading the current max sprint number
+     * so concurrent inserts for the same project are serialized.
      */
     protected static function nextSprintNumber(string $projectId): int
     {
         return DB::transaction(function () use ($projectId) {
+            Project::withoutTenantScope()
+                ->whereKey($projectId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $max = static::withoutGlobalScope('tenant')
                 ->where('project_id', $projectId)
-                ->lockForUpdate()
                 ->max('sprint_number');
 
             return ((int) ($max ?? 0)) + 1;

@@ -106,7 +106,7 @@ class ScrumItemPlacementTest extends TestCase
         // 4 stories in the sprint
         $epic = Epic::factory()->create(['project_id' => $this->project->id]);
         for ($i = 0; $i < 4; $i++) {
-            $story = Story::factory()->create(['epic_id' => $epic->id]);
+            $story = Story::factory()->create(['epic_id' => $epic->id, 'ready' => true]);
             $artifact = Artifact::where('artifactable_type', Story::class)
                 ->where('artifactable_id', $story->id)
                 ->firstOrFail();
@@ -345,7 +345,7 @@ class ScrumItemPlacementTest extends TestCase
 
         // Attempt to add a 4th story — need a 5th sprint item
         $epic = Epic::factory()->create(['project_id' => $this->project->id]);
-        $story = Story::factory()->create(['epic_id' => $epic->id]);
+        $story = Story::factory()->create(['epic_id' => $epic->id, 'ready' => true]);
         $artifact = Artifact::where('artifactable_type', Story::class)
             ->where('artifactable_id', $story->id)
             ->firstOrFail();
@@ -741,7 +741,7 @@ class ScrumItemPlacementTest extends TestCase
 
         // Add a story to sprint2
         $epic = Epic::factory()->create(['project_id' => $this->project->id]);
-        $story2 = Story::factory()->create(['epic_id' => $epic->id]);
+        $story2 = Story::factory()->create(['epic_id' => $epic->id, 'ready' => true]);
         $artifact2 = Artifact::where('artifactable_type', Story::class)
             ->where('artifactable_id', $story2->id)
             ->firstOrFail();

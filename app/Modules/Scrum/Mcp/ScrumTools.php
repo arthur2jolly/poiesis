@@ -285,6 +285,7 @@ class ScrumTools implements McpToolInterface
                 ]);
             }
 
+            Project::whereKey($locked->project_id)->lockForUpdate()->firstOrFail();
             $this->assertNoActiveSprintInProject($locked->project_id, $locked->id);
 
             $locked->status = 'active';
@@ -1470,6 +1471,8 @@ class ScrumTools implements McpToolInterface
             throw ValidationException::withMessages(['project' => ['Access denied.']]);
         }
 
+        $this->assertScrumModuleActive($project);
+
         return $project;
     }
 
@@ -1499,6 +1502,8 @@ class ScrumTools implements McpToolInterface
             throw ValidationException::withMessages(['identifier' => ['Sprint not found.']]);
         }
 
+        $this->assertScrumModuleActive($project, 'identifier');
+
         $sprint = Sprint::where('project_id', $project->id)
             ->where('sprint_number', (int) $m[2])
             ->first();
@@ -1507,6 +1512,17 @@ class ScrumTools implements McpToolInterface
         }
 
         return $sprint;
+    }
+
+    private function assertScrumModuleActive(Project $project, string $field = 'project'): void
+    {
+        if (in_array('scrum', $project->modules ?? [], true)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $field => ["Module 'scrum' is not active for project '{$project->code}'."],
+        ]);
     }
 
     // ===== Tool descriptions =====
@@ -2548,8 +2564,9 @@ class ScrumTools implements McpToolInterface
 
             $effectivePosition = ($position === null || $position >= $targetCount) ? $targetCount : $position;
 
-            // Move to target column at sentinel position, recompact source, then insert at target.
-            $placement->update(['column_id' => $column->id, 'position' => -1]);
+            // Move to target column at an unsigned-safe sentinel position, recompact source,
+            // then insert at target. MariaDB rejects -1 because position is unsigned.
+            $placement->update(['column_id' => $column->id, 'position' => $targetCount]);
             $this->recompactColumnPositions($sourceColumnId);
 
             if ($effectivePosition < $targetCount) {

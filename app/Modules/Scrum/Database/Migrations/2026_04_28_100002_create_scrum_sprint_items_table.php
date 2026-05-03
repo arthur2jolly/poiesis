@@ -10,14 +10,17 @@ return new class extends Migration
     {
         Schema::create('scrum_sprint_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->uuid('tenant_id');
             $table->uuid('sprint_id');
             $table->uuid('artifact_id');
             $table->unsignedInteger('position')->default(0);
             $table->timestamp('added_at')->useCurrent();
 
+            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             $table->foreign('sprint_id')->references('id')->on('scrum_sprints')->cascadeOnDelete();
             $table->foreign('artifact_id')->references('id')->on('artifacts')->cascadeOnDelete();
             $table->unique('artifact_id');
+            $table->index('tenant_id');
             $table->index('sprint_id');
             $table->index(['sprint_id', 'position']);
         });

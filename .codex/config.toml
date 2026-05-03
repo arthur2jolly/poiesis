@@ -69,3 +69,9 @@ approval_mode = "approve"
 
 [mcp_servers.manager.tools.create_tasks]
 approval_mode = "approve"
+
+[mcp_servers.manager.tools.scrum_item_move]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.update_task_status]
+approval_mode = "approve"

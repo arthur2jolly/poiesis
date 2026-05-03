@@ -26,11 +26,11 @@ trait BelongsToTenant
         });
 
         static::creating(function (Model $model) {
-            if (empty($model->tenant_id)) {
+            if (empty($model->getAttribute('tenant_id'))) {
                 /** @var TenantManager $manager */
                 $manager = app(TenantManager::class);
                 if ($manager->hasTenant()) {
-                    $model->tenant_id = $manager->getTenant()->id;
+                    $model->setAttribute('tenant_id', $manager->getTenant()->id);
                 }
             }
         });
@@ -47,6 +47,9 @@ trait BelongsToTenant
      */
     public static function withoutTenantScope(): Builder
     {
-        return static::withoutGlobalScope('tenant');
+        /** @var Builder<static> $builder */
+        $builder = static::withoutGlobalScope('tenant');
+
+        return $builder;
     }
 }

@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 use App\Core\Models\ApiToken;
+use App\Core\Models\Epic;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
+use App\Core\Models\Story;
+use App\Core\Models\Task;
 use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\TenantManager;
 use App\Modules\Scrum\Models\Sprint;
+use App\Modules\Scrum\Models\SprintItem;
 use Illuminate\Testing\TestResponse;
 
 // ============================================================
@@ -231,6 +235,24 @@ it('isolates active uniqueness per project (cross-project in same tenant)', func
     expect($result['status'])->toBe('active');
 });
 
+it('refuses lifecycle tools when scrum module is inactive for the sprint project', function () {
+    $ctx = lifecycleSetup('NOCR');
+    $ctx['project']->update(['modules' => []]);
+    $sprint = makeSprint($ctx['project'], 'planned');
+
+    foreach ([
+        'start_sprint' => 'planned',
+        'close_sprint' => 'planned',
+        'cancel_sprint' => 'planned',
+    ] as $tool => $expectedStatus) {
+        assertLifecycleError(
+            mcpLifecycleCall($tool, ['identifier' => $sprint->identifier], $ctx['token']),
+            "Module 'scrum' is not active for project 'NOCR'."
+        );
+        expect($sprint->fresh()->status)->toBe($expectedStatus);
+    }
+});
+
 // ============================================================
 // close_sprint — happy path
 // ============================================================
@@ -250,6 +272,35 @@ it('closes an active sprint and stamps closed_at', function () {
     $fresh = $sprint->fresh();
     expect($fresh->closed_at)->not->toBeNull();
     expect($fresh->closed_at->timestamp)->toBeGreaterThanOrEqual($before->timestamp);
+});
+
+it('does not close sprint stories or tasks when closing the sprint', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'active');
+    $epic = Epic::factory()->create(['project_id' => $ctx['project']->id]);
+    $story = Story::factory()->create([
+        'epic_id' => $epic->id,
+        'statut' => 'open',
+    ]);
+    $task = Task::factory()->create([
+        'project_id' => $ctx['project']->id,
+        'story_id' => $story->id,
+        'statut' => 'open',
+    ]);
+
+    SprintItem::create([
+        'sprint_id' => $sprint->id,
+        'artifact_id' => $story->artifact->id,
+        'position' => 0,
+    ]);
+
+    assertLifecycleSuccess(
+        mcpLifecycleCall('close_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($sprint->fresh()->status)->toBe('completed');
+    expect($story->fresh()->statut)->toBe('open');
+    expect($task->fresh()->statut)->toBe('open');
 });
 
 // ============================================================

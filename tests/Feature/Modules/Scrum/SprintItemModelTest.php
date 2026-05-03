@@ -14,6 +14,7 @@ use App\Modules\Scrum\Models\Sprint;
 use App\Modules\Scrum\Models\SprintItem;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class SprintItemModelTest extends TestCase
@@ -63,6 +64,7 @@ class SprintItemModelTest extends TestCase
         ]);
 
         $this->assertNotNull($item->id);
+        $this->assertSame($this->tenant->id, $item->tenant_id);
 
         // added_at is set by DB DEFAULT CURRENT_TIMESTAMP — refresh to read it
         $item->refresh();
@@ -193,5 +195,78 @@ class SprintItemModelTest extends TestCase
         ]);
 
         $this->assertEquals($task->id, $item->artifact->artifactable_id);
+    }
+
+    public function test_sprint_item_rejects_cross_project_artifact(): void
+    {
+        $otherProject = Project::factory()->create([
+            'code' => 'OTH',
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $otherEpic = Epic::factory()->create(['project_id' => $otherProject->id]);
+        $otherStory = Story::factory()->create(['epic_id' => $otherEpic->id]);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Artifact does not belong to the same project as the sprint.');
+
+        SprintItem::create([
+            'sprint_id' => $this->sprint->id,
+            'artifact_id' => $otherStory->artifact->id,
+            'position' => 0,
+        ]);
+    }
+
+    public function test_sprint_item_rejects_cross_tenant_artifact(): void
+    {
+        $otherTenant = createTenant();
+
+        app(TenantManager::class)->setTenant($otherTenant);
+        $otherProject = Project::factory()->create([
+            'code' => 'TEN',
+            'tenant_id' => $otherTenant->id,
+        ]);
+        $otherEpic = Epic::factory()->create(['project_id' => $otherProject->id]);
+        $otherStory = Story::factory()->create(['epic_id' => $otherEpic->id]);
+        $otherArtifactId = $otherStory->artifact->id;
+
+        app(TenantManager::class)->setTenant($this->tenant);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Artifact does not belong to the same tenant as the sprint.');
+
+        SprintItem::create([
+            'sprint_id' => $this->sprint->id,
+            'artifact_id' => $otherArtifactId,
+            'position' => 0,
+        ]);
+    }
+
+    public function test_sprint_item_tenant_scope_hides_other_tenant_items(): void
+    {
+        $otherTenant = createTenant();
+
+        app(TenantManager::class)->setTenant($otherTenant);
+        $otherProject = Project::factory()->create([
+            'code' => 'HID',
+            'tenant_id' => $otherTenant->id,
+        ]);
+        $otherSprint = Sprint::create([
+            'project_id' => $otherProject->id,
+            'name' => 'Hidden Sprint',
+            'start_date' => '2026-06-01',
+            'end_date' => '2026-06-14',
+        ]);
+        $otherEpic = Epic::factory()->create(['project_id' => $otherProject->id]);
+        $otherStory = Story::factory()->create(['epic_id' => $otherEpic->id]);
+        $otherItem = SprintItem::create([
+            'sprint_id' => $otherSprint->id,
+            'artifact_id' => $otherStory->artifact->id,
+            'position' => 0,
+        ]);
+
+        app(TenantManager::class)->setTenant($this->tenant);
+
+        $this->assertNull(SprintItem::find($otherItem->id));
+        $this->assertNotNull(SprintItem::withoutTenantScope()->find($otherItem->id));
     }
 }

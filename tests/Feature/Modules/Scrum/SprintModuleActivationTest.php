@@ -10,6 +10,7 @@ use App\Core\Models\ProjectMember;
 use App\Core\Models\Tenant;
 use App\Core\Models\User;
 use App\Core\Services\TenantManager;
+use App\Modules\Scrum\Models\Sprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -130,6 +131,51 @@ class SprintModuleActivationTest extends TestCase
         $this->assertArrayHasKey('error', $data);
         // McpServer returns "Module 'scrum' is not active for project 'NOK'."
         $this->assertStringContainsString('not active for project', $data['error']['message']);
+    }
+
+    public function test_list_sprints_fails_when_module_not_activated(): void
+    {
+        $this->createProjectWithModules('NOK', []);
+
+        $response = $this->mcpCall('list_sprints', [
+            'project_code' => 'NOK',
+        ]);
+
+        $response->assertOk();
+        $data = $response->json();
+        $this->assertArrayHasKey('error', $data);
+        $this->assertStringContainsString("Module 'scrum' is not active for project 'NOK'.", $data['error']['message']);
+    }
+
+    public function test_identifier_sprint_tools_fail_when_module_not_activated(): void
+    {
+        $project = $this->createProjectWithModules('NOK', []);
+        Sprint::create([
+            'tenant_id' => $project->tenant_id,
+            'project_id' => $project->id,
+            'name' => 'Inactive Scrum Sprint',
+            'start_date' => '2026-05-01',
+            'end_date' => '2026-05-15',
+        ]);
+
+        foreach ([
+            ['get_sprint', ['identifier' => 'NOK-S1']],
+            ['update_sprint', ['identifier' => 'NOK-S1', 'name' => 'Blocked update']],
+            ['delete_sprint', ['identifier' => 'NOK-S1']],
+        ] as [$tool, $arguments]) {
+            $response = $this->mcpCall($tool, $arguments);
+
+            $response->assertOk();
+            $data = $response->json();
+            $this->assertArrayHasKey('error', $data);
+            $this->assertStringContainsString("Module 'scrum' is not active for project 'NOK'.", $data['error']['message']);
+        }
+
+        $this->assertDatabaseHas('scrum_sprints', [
+            'project_id' => $project->id,
+            'sprint_number' => 1,
+            'name' => 'Inactive Scrum Sprint',
+        ]);
     }
 
     // ===== Format shape =====
