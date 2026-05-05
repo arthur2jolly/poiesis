@@ -537,7 +537,7 @@ it('cancels an active sprint and frees the active slot', function () {
     $result = assertLifecycleSuccess(
         mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token'])
     );
-    expect($result['status'])->toBe('active');
+    expect($result['sprint']['status'])->toBe('active');
 });
 
 // ============================================================
