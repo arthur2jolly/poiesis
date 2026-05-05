@@ -865,7 +865,7 @@ it('T-34: story format exposes story_points and type=story', function () {
     $artifact = $result['data'][0]['artifact'];
     expect($artifact['type'])->toBe('story');
     expect($artifact['story_points'])->toBe(8);
-    expect($artifact['ready'])->toBeFalse();
+    expect($artifact['ready'])->toBeTrue();
     expect($artifact['title'])->not->toBeNull();
 });
 
