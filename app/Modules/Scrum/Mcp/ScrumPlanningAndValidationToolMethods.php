@@ -603,7 +603,9 @@ trait ScrumPlanningAndValidationToolMethods
      * a violation message suitable for the add_to_planning error output.
      *
      * Single source of truth for the criteria via PLANNABLE_STATUS and
-     * PLANNABLE_REQUIRES_READY (POIESIS-54).
+     * PLANNABLE_REQUIRES_READY (POIESIS-54). The ready check below is the
+     * runtime mirror of the PLANNABLE_REQUIRES_READY=true setting; if that
+     * constant ever flips to false, drop this branch in lockstep.
      */
     private function storyPlanningGateViolation(Story $story): ?string
     {
@@ -613,7 +615,7 @@ trait ScrumPlanningAndValidationToolMethods
         if ($story->statut !== self::PLANNABLE_STATUS) {
             return 'must be open to plan.';
         }
-        if (self::PLANNABLE_REQUIRES_READY && $story->ready !== true) {
+        if ($story->ready !== true) {
             $missing = $this->dorMissingFields($story);
 
             return 'not ready (missing: '.implode(', ', $missing).').';

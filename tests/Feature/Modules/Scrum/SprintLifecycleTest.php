@@ -11,6 +11,7 @@ use App\Core\Models\Story;
 use App\Core\Models\Task;
 use App\Core\Models\Tenant;
 use App\Core\Models\User;
+use App\Core\Services\DependencyService;
 use App\Core\Services\TenantManager;
 use App\Modules\Scrum\Models\ScrumColumn;
 use App\Modules\Scrum\Models\ScrumItemPlacement;
@@ -748,7 +749,7 @@ it('refuses commit when sprint has blocking_dependency error', function () {
 
     /** @var Story $blocked */
     $blocked = $blockingItem->artifact->artifactable;
-    app(\App\Core\Services\DependencyService::class)->addDependency($blocked, $blocker);
+    app(DependencyService::class)->addDependency($blocked, $blocker);
 
     assertLifecycleError(
         mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
