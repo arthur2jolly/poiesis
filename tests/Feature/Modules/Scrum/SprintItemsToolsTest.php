@@ -76,7 +76,12 @@ function makeStory(Project $project, array $overrides = []): Story
 {
     $epic = Epic::factory()->create(['project_id' => $project->id]);
 
-    return Story::factory()->create(array_merge(['epic_id' => $epic->id], $overrides));
+    // Default to ready=true: realistic case for tests that add stories to a
+    // sprint. add_to_sprint enforces DoR — pass ['ready' => false] to opt out.
+    return Story::factory()->create(array_merge(
+        ['epic_id' => $epic->id, 'ready' => true],
+        $overrides
+    ));
 }
 
 function makeStandaloneTask(Project $project, array $overrides = []): Task
@@ -887,4 +892,60 @@ it('T-35: task format exposes type=task and story_points=null', function () {
     expect($artifact['story_points'])->toBeNull();
     expect($artifact['ready'])->toBeNull();
     expect($artifact['title'])->not->toBeNull();
+});
+
+// ============================================================
+// T-50 — add_to_sprint rejects a non-ready story (DoR enforced)
+// ============================================================
+
+it('T-50: rejects a non-ready story when adding to sprint', function () {
+    $ctx = itemsSetup();
+    $sprint = makeSprintWithStatus($ctx['project']);
+    $story = makeStory($ctx['project'], ['ready' => false]);
+
+    assertItemsError(mcpItemsCall('add_to_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $story->identifier,
+    ], $ctx['manager_token']), 'Story is not ready');
+
+    expect(SprintItem::count())->toBe(0);
+});
+
+// ============================================================
+// T-51 — add_to_sprint reports missing DoR fields
+// ============================================================
+
+it('T-51: lists missing DoR fields when story not ready', function () {
+    $ctx = itemsSetup();
+    $sprint = makeSprintWithStatus($ctx['project']);
+    $story = makeStory($ctx['project'], [
+        'ready' => false,
+        'story_points' => null,
+        'description' => '',
+    ]);
+
+    assertItemsError(mcpItemsCall('add_to_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $story->identifier,
+    ], $ctx['manager_token']), 'story_points');
+
+    expect(SprintItem::count())->toBe(0);
+});
+
+// ============================================================
+// T-52 — add_to_sprint still accepts standalone tasks (no DoR)
+// ============================================================
+
+it('T-52: standalone tasks bypass the DoR check', function () {
+    $ctx = itemsSetup();
+    $sprint = makeSprintWithStatus($ctx['project']);
+    $task = makeStandaloneTask($ctx['project']);
+
+    $result = assertItemsSuccess(mcpItemsCall('add_to_sprint', [
+        'sprint_identifier' => $sprint->identifier,
+        'item_identifier' => $task->identifier,
+    ], $ctx['manager_token']));
+
+    expect($result['artifact']['type'])->toBe('task');
+    expect(SprintItem::count())->toBe(1);
 });

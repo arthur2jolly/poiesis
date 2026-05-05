@@ -444,6 +444,19 @@ class ScrumTools implements McpToolInterface
             $sprint
         );
 
+        // Definition of Ready: stories must be marked ready before being
+        // added to a sprint. Standalone tasks bypass this check (DoR is a
+        // story concept). Aligns add_to_sprint with add_to_planning so an
+        // agent cannot bypass the gate by going through the items API.
+        $artifactRow->loadMissing('artifactable');
+        $model = $artifactRow->artifactable;
+        if ($model instanceof Story && $model->ready !== true) {
+            $missing = $this->dorMissingFields($model);
+            throw ValidationException::withMessages([
+                'item' => ['Story is not ready. Missing: '.implode(', ', $missing).'.'],
+            ]);
+        }
+
         $position = null;
         if (array_key_exists('position', $params) && $params['position'] !== null) {
             if (! is_int($params['position']) || $params['position'] < 0) {
@@ -1806,7 +1819,7 @@ class ScrumTools implements McpToolInterface
     {
         return [
             'name' => 'add_to_sprint',
-            'description' => 'Add a story or standalone task to a sprint backlog (sprint must be in status planned or active)',
+            'description' => 'Add a story or standalone task to a sprint backlog. Sprint must be in status planned or active. Stories must be marked ready (Definition of Ready) — use mark_ready first if needed. Standalone tasks bypass the DoR check.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
