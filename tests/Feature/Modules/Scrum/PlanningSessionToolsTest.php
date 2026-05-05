@@ -952,3 +952,60 @@ it('P-48: tools/list returns 19 tools when scrum module is active', function () 
     expect($names)->toContain('remove_from_planning');
     expect(count($names))->toBeGreaterThanOrEqual(19);
 });
+
+// ============================================================
+// POIESIS-54 — single source of truth for the plannable predicate
+// ============================================================
+
+it('P-50: draft+ready=true story is hidden from start_planning ready_backlog', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project'], 'planned');
+    // Pathological case: ready=true but statut=draft (only achievable by
+    // bypassing mark_ready). The plannable gate must still exclude it.
+    planStory($ctx['project'], ['statut' => 'draft', 'ready' => true]);
+
+    $result = planOk(mcpPlan('start_planning', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+
+    expect($result['ready_backlog'])->toBe([]);
+});
+
+it('P-51: draft+ready=true story is rejected by add_to_planning with the same predicate', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project'], 'planned');
+    $story = planStory($ctx['project'], ['statut' => 'draft', 'ready' => true]);
+
+    planErr(mcpPlan('add_to_planning', [
+        'sprint_identifier' => $sprint->identifier,
+        'story_identifiers' => [$story->identifier],
+    ], $ctx['manager_token']), 'must be open to plan');
+});
+
+it('P-52: open+ready=true story is plannable on both gates', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project'], 'planned');
+    $story = planReadyStory($ctx['project']);
+
+    $start = planOk(mcpPlan('start_planning', [
+        'sprint_identifier' => $sprint->identifier,
+    ], $ctx['manager_token']));
+    expect($start['ready_backlog'])->toHaveCount(1);
+    expect($start['ready_backlog'][0]['identifier'])->toBe($story->identifier);
+
+    planOk(mcpPlan('add_to_planning', [
+        'sprint_identifier' => $sprint->identifier,
+        'story_identifiers' => [$story->identifier],
+    ], $ctx['manager_token']));
+});
+
+it('P-53: closed+ready=true story is rejected with the closed-specific message', function () {
+    $ctx = planSetup();
+    $sprint = planSprint($ctx['project'], 'planned');
+    $story = planStory($ctx['project'], ['statut' => 'closed', 'ready' => true]);
+
+    planErr(mcpPlan('add_to_planning', [
+        'sprint_identifier' => $sprint->identifier,
+        'story_identifiers' => [$story->identifier],
+    ], $ctx['manager_token']), 'cannot plan a closed story');
+});
