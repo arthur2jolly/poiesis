@@ -121,6 +121,22 @@ function assertLifecycleError(TestResponse $response, string $contains): void
     expect($data['error']['message'])->toContain($contains);
 }
 
+/**
+ * commit_sprint soft-fail helper (warnings present, force=false): the
+ * response is a regular JSON-RPC success carrying { state, warnings,
+ * sprint_identifier } — distinct from the happy-path { sprint, warnings }.
+ */
+function assertWarningsPending(TestResponse $response): array
+{
+    $response->assertOk();
+    $data = $response->json();
+    expect($data)->not->toHaveKey('error');
+    $payload = json_decode($data['result']['content'][0]['text'], true);
+    expect($payload['state'] ?? null)->toBe('warnings_pending');
+
+    return $payload;
+}
+
 // ============================================================
 // tools() — discovery
 // ============================================================
@@ -162,8 +178,10 @@ it('starts a planned sprint', function () {
         mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
     );
 
-    expect($result['status'])->toBe('active');
-    expect($result['closed_at'])->toBeNull();
+    expect($result)->toHaveKeys(['sprint', 'warnings']);
+    expect($result['sprint']['status'])->toBe('active');
+    expect($result['sprint']['closed_at'])->toBeNull();
+    expect($result['warnings'])->toBe([]);
     expect($sprint->fresh()->status)->toBe('active');
 });
 
@@ -229,7 +247,7 @@ it('allows starting a sprint after the previous one is closed', function () {
     assertLifecycleSuccess(mcpLifecycleCall('close_sprint', ['identifier' => $s1->identifier], $ctx['token']));
     $result = assertLifecycleSuccess(mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token']));
 
-    expect($result['status'])->toBe('active');
+    expect($result['sprint']['status'])->toBe('active');
     expect($s1->fresh()->status)->toBe('completed');
 });
 
@@ -242,7 +260,7 @@ it('allows starting a sprint after the previous one is cancelled', function () {
     assertLifecycleSuccess(mcpLifecycleCall('cancel_sprint', ['identifier' => $s1->identifier], $ctx['token']));
     $result = assertLifecycleSuccess(mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token']));
 
-    expect($result['status'])->toBe('active');
+    expect($result['sprint']['status'])->toBe('active');
     expect($s1->fresh()->status)->toBe('cancelled');
 });
 
@@ -268,7 +286,7 @@ it('isolates active uniqueness per project (cross-project in same tenant)', func
         mcpLifecycleCall('commit_sprint', ['identifier' => $sB->identifier], $ctx['token'])
     );
 
-    expect($result['status'])->toBe('active');
+    expect($result['sprint']['status'])->toBe('active');
 });
 
 // ============================================================
@@ -287,7 +305,7 @@ it('refuses to commit an empty sprint (empty_sprint blocking error)', function (
     expect($sprint->fresh()->status)->toBe('planned');
 });
 
-it('refuses to commit when warnings are present and force is not set', function () {
+it('returns warnings_pending soft-fail when warnings are present and force is not set', function () {
     $ctx = lifecycleSetup();
     // Sprint with no goal triggers missing_goal warning.
     $sprint = Sprint::create([
@@ -301,10 +319,13 @@ it('refuses to commit when warnings are present and force is not set', function 
     ]);
     seedReadyItem($sprint);
 
-    assertLifecycleError(
-        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
-        'force=true'
+    $payload = assertWarningsPending(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
     );
+
+    expect($payload['sprint_identifier'])->toBe($sprint->identifier);
+    expect($payload['warnings'])->not->toBeEmpty();
+    expect($payload['warnings'][0]['code'])->toBe('missing_goal');
     expect($sprint->fresh()->status)->toBe('planned');
 });
 
@@ -328,7 +349,9 @@ it('commits a sprint with warnings when force=true', function () {
         ], $ctx['token'])
     );
 
-    expect($result['status'])->toBe('active');
+    expect($result['sprint']['status'])->toBe('active');
+    expect($result['warnings'])->not->toBeEmpty();
+    expect($result['warnings'][0]['code'])->toBe('missing_goal');
     expect($sprint->fresh()->status)->toBe('active');
 });
 
@@ -514,7 +537,7 @@ it('cancels an active sprint and frees the active slot', function () {
     $result = assertLifecycleSuccess(
         mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token'])
     );
-    expect($result['status'])->toBe('active');
+    expect($result['sprint']['status'])->toBe('active');
 });
 
 // ============================================================
@@ -610,4 +633,170 @@ it('rejects non-existent sprint number with Sprint not found', function () {
         mcpLifecycleCall('commit_sprint', ['identifier' => 'LFC-S99'], $ctx['token']),
         'Sprint not found.'
     );
+});
+
+// ============================================================
+// commit_sprint — POIESIS-50: item coherence after commit
+// ============================================================
+
+it('keeps sprint items count unchanged after commit_sprint', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+    seedReadyItem($sprint);
+    $countBefore = SprintItem::where('sprint_id', $sprint->id)->count();
+
+    assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect(SprintItem::where('sprint_id', $sprint->id)->count())->toBe($countBefore);
+});
+
+it('keeps sprint item positions unchanged after commit_sprint', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    $i1 = seedReadyItem($sprint);
+    $i2 = seedReadyItem($sprint);
+    $i2->update(['position' => 1]);
+
+    assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($i1->fresh()->position)->toBe(0);
+    expect($i2->fresh()->position)->toBe(1);
+});
+
+it('does not close stories/tasks at commit time (only close_sprint does)', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    $item = seedReadyItem($sprint);
+    /** @var Story $story */
+    $story = $item->artifact->artifactable;
+    $statutBefore = $story->statut;
+
+    assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($story->fresh()->statut)->toBe($statutBefore);
+});
+
+it('exposes committed-sprint items via scrum_board_get', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+
+    assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    // Confirm the sprint is the active one and items are still attached.
+    expect($sprint->fresh()->status)->toBe('active');
+    expect(SprintItem::where('sprint_id', $sprint->id)->count())->toBeGreaterThan(0);
+});
+
+// ============================================================
+// commit_sprint — POIESIS-51: missing test coverage
+// ============================================================
+
+it('refuses commit when sprint has missing_estimation error', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    // Story marked ready=true but with no story_points -> missing_estimation.
+    $epic = Epic::factory()->create(['project_id' => $sprint->project_id]);
+    $story = Story::factory()->create([
+        'epic_id' => $epic->id,
+        'statut' => 'open',
+        'ready' => true,
+        'story_points' => null,
+        'description' => 'Story without estimation',
+    ]);
+    /** @var Artifact $artifact */
+    $artifact = Artifact::where('artifactable_id', $story->id)
+        ->where('artifactable_type', Story::class)
+        ->firstOrFail();
+    SprintItem::create([
+        'tenant_id' => $sprint->tenant_id,
+        'sprint_id' => $sprint->id,
+        'artifact_id' => $artifact->id,
+        'position' => 0,
+    ]);
+
+    assertLifecycleError(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        '[missing_estimation]'
+    );
+    expect($sprint->fresh()->status)->toBe('planned');
+});
+
+it('refuses commit when sprint has blocking_dependency error', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    $blockingItem = seedReadyItem($sprint);
+
+    // Create a blocker story (not in the sprint, still open).
+    $epic = Epic::factory()->create(['project_id' => $sprint->project_id]);
+    $blocker = Story::factory()->create([
+        'epic_id' => $epic->id,
+        'statut' => 'open',
+        'ready' => true,
+        'story_points' => 2,
+        'description' => 'Open blocker',
+    ]);
+
+    /** @var Story $blocked */
+    $blocked = $blockingItem->artifact->artifactable;
+    app(\App\Core\Services\DependencyService::class)->addDependency($blocked, $blocker);
+
+    assertLifecycleError(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        '[blocking_dependency]'
+    );
+    expect($sprint->fresh()->status)->toBe('planned');
+});
+
+it('refuses commit_sprint for a viewer (insufficient permissions)', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+
+    $viewer = User::factory()->viewer()->create(['tenant_id' => $ctx['tenant']->id]);
+    $raw = ApiToken::generateRaw();
+    $viewer->apiTokens()->create([
+        'name' => 'viewer',
+        'token' => $raw['hash'],
+        'tenant_id' => $ctx['tenant']->id,
+    ]);
+    ProjectMember::create([
+        'project_id' => $ctx['project']->id,
+        'user_id' => $viewer->id,
+        'position' => 'member',
+    ]);
+
+    assertLifecycleError(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $raw['raw']),
+        'permission'
+    );
+    expect($sprint->fresh()->status)->toBe('planned');
+});
+
+it('returns a valid JSON-RPC envelope on commit_sprint success', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+
+    $response = mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']);
+    $response->assertOk();
+    $data = $response->json();
+
+    expect($data)->toHaveKeys(['jsonrpc', 'id', 'result']);
+    expect($data['jsonrpc'])->toBe('2.0');
+    expect($data)->not->toHaveKey('error');
+
+    $payload = json_decode($data['result']['content'][0]['text'], true);
+    expect($payload)->toHaveKeys(['sprint', 'warnings']);
+    expect($payload['sprint'])->toHaveKey('identifier');
+    expect($payload['sprint']['status'])->toBe('active');
 });

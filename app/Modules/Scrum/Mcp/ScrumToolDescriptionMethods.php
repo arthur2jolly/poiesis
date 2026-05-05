@@ -106,12 +106,12 @@ trait ScrumToolDescriptionMethods
     {
         return [
             'name' => 'commit_sprint',
-            'description' => 'Commit a sprint plan (planned -> active). Internally runs validate_sprint_plan first: hard errors always abort; warnings abort unless force=true acknowledges them. Also fails if another sprint is already active in the project.',
+            'description' => 'Commit a sprint plan (planned -> active). Internally runs validate_sprint_plan. Returns one of three shapes: (1) success { sprint, warnings } when validation passes (or warnings acknowledged via force=true); (2) soft-fail { state: "warnings_pending", warnings, sprint_identifier } when warnings are present and force=false — no transition is performed, reissue with force=true to confirm; (3) ValidationException with one of the stable keys: commit.sprint_not_planned, commit.has_errors, commit.another_active. Hard errors are never bypassed by force.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'identifier' => ['type' => 'string'],
-                    'force' => ['type' => 'boolean', 'description' => 'When true, acknowledge non-blocking validation warnings and proceed anyway. Default false. Has no effect on hard errors.'],
+                    'force' => ['type' => 'boolean', 'description' => 'Acknowledge non-blocking validation warnings and proceed. Default false. Never bypasses blocking errors.'],
                 ],
                 'required' => ['identifier'],
             ],

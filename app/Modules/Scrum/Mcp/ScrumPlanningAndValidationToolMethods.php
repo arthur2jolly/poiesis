@@ -274,6 +274,24 @@ trait ScrumPlanningAndValidationToolMethods
     {
         $sprint = $this->findSprint((string) ($params['sprint_identifier'] ?? ''), $user);
 
+        return $this->computeSprintValidation($sprint);
+    }
+
+    /**
+     * Pure plan-validation logic, callable both from the MCP tool
+     * sprintValidatePlan() and from sprintCommit() without re-routing
+     * through a fake $params payload.
+     *
+     * @return array{
+     *     ok: bool,
+     *     sprint_identifier: string,
+     *     errors: array<int, array<string, mixed>>,
+     *     warnings: array<int, array<string, mixed>>,
+     *     summary: array{items_count: int, engaged_points: int, capacity: int|null}
+     * }
+     */
+    private function computeSprintValidation(Sprint $sprint): array
+    {
         /** @var Collection<int, SprintItem> $items */
         $items = $sprint->items()->with(['artifact.artifactable'])->orderBy('position')->get();
 
