@@ -101,4 +101,18 @@ return [
     'oauth_access_token_ttl' => (int) env('OAUTH_ACCESS_TOKEN_TTL', 60),
     'oauth_refresh_token_ttl' => (int) env('OAUTH_REFRESH_TOKEN_TTL', 43200),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Statuts de sprint (module Scrum)
+    |--------------------------------------------------------------------------
+    */
+    'sprint_statuses' => ['planned', 'active', 'completed', 'cancelled'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Statut de sprint par defaut
+    |--------------------------------------------------------------------------
+    */
+    'default_sprint_status' => 'planned',
+
 ];

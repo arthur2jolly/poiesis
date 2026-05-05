@@ -22,7 +22,7 @@
         </div>
         <h1 class="text-xl font-semibold text-gray-900 mb-2">{{ $epic->titre }}</h1>
         @if($epic->description)
-            <p class="text-gray-600">{{ $epic->description }}</p>
+            @include('dashboard::components.markdown', ['source' => $epic->description, 'class' => 'text-gray-600'])
         @endif
     </div>
 

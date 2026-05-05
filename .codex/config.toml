@@ -1,0 +1,95 @@
+[mcp_servers.admin]
+url = "http://poiesis.ddev.site/mcp"
+
+[mcp_servers.admin.http_headers]
+Authorization = "Bearer aa-84cc2b06d4669af584875217afaa49fd6e87d5cf"
+
+[mcp_servers.admin.tools.list_projects]
+approval_mode = "approve"
+
+[mcp_servers.admin.tools.list_project_modules]
+approval_mode = "approve"
+
+[mcp_servers.admin.tools.list_epics]
+approval_mode = "approve"
+
+[mcp_servers.admin.tools.kanban_board_list]
+approval_mode = "approve"
+
+[mcp_servers.manager]
+url = "http://poiesis.ddev.site/mcp"
+
+[mcp_servers.manager.http_headers]
+Authorization = "Bearer aa-878e1d438c4d16276f4c52b4af4ab313b3028fbc"
+
+[mcp_servers.manager.tools.get_story]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.list_story_tasks]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.update_story_status]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.list_sprints]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.create_sprint]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.add_to_sprint]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.list_sprint_items]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.get_sprint]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.start_sprint]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.scrum_board_get]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.scrum_board_build]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.scrum_item_place]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.create_task]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.mark_ready]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.scrum_column_items]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.create_tasks]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.scrum_item_move]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.update_task_status]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.close_sprint]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.list_backlog]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.start_planning]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.add_to_planning]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.validate_sprint_plan]
+approval_mode = "approve"
+
+[mcp_servers.manager.tools.list_members]
+approval_mode = "approve"

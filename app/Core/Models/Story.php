@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $priorite
  * @property int|null $ordre
  * @property int|null $story_points
+ * @property int|null $rank
+ * @property bool $ready
  * @property string|null $reference_doc
  * @property array<int, string>|null $tags
  * @property Carbon $created_at
@@ -46,13 +48,15 @@ class Story extends Model
     protected $fillable = [
         'epic_id', 'titre', 'description', 'type', 'nature',
         'statut', 'priorite', 'ordre', 'story_points',
-        'reference_doc', 'tags',
+        'reference_doc', 'tags', 'rank', 'ready',
     ];
 
     protected $casts = [
         'tags' => 'array',
         'ordre' => 'integer',
         'story_points' => 'integer',
+        'rank' => 'integer',
+        'ready' => 'bool',
     ];
 
     public function epic(): BelongsTo

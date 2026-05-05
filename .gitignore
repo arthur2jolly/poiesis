@@ -40,5 +40,6 @@ Thumbs.db
 /.claude
 /CLAUDE.md
 .mcp.json
+/.playwright-mcp
 Homestead.json
 Homestead.yaml

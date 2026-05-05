@@ -16,7 +16,7 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h1 class="text-xl font-semibold text-gray-900 mb-2">{{ $project->titre }}</h1>
         @if($project->description)
-            <p class="text-gray-600">{{ $project->description }}</p>
+            @include('dashboard::components.markdown', ['source' => $project->description, 'class' => 'text-gray-600'])
         @endif
     </div>
 

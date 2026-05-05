@@ -14,6 +14,10 @@
     if ($hasKanban) {
         $tabs[] = ['route' => route('dashboard.kanban', $project->code), 'label' => 'Kanban', 'key' => 'kanban'];
     }
+    $hasScrum = in_array('scrum', $project->modules ?? [], true);
+    if ($hasScrum) {
+        $tabs[] = ['route' => route('scrum.sprints', $project->code), 'label' => 'Scrum', 'key' => 'scrum'];
+    }
 @endphp
 @foreach($tabs as $tab)
     <a href="{{ $tab['route'] }}" class="border-b-2 {{ $active === $tab['key'] ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }} px-1 py-3 text-sm font-medium">{{ $tab['label'] }}</a>
