@@ -185,10 +185,44 @@ trait ScrumSprintToolMethods
     /** @param array<string, mixed> $params
      * @return array<string, mixed>
      */
-    private function sprintStart(array $params, User $user): array
+    private function sprintCommit(array $params, User $user): array
     {
         $this->assertCanManage($user);
         $sprint = $this->findSprint((string) ($params['identifier'] ?? ''), $user);
+        $force = (bool) ($params['force'] ?? false);
+
+        // Status check up-front so callers committing a non-planned sprint
+        // still get the precise transition error rather than spurious
+        // validation feedback. A second check inside the transaction below
+        // remains the actual race-safe gate.
+        if ($sprint->status !== 'planned') {
+            throw ValidationException::withMessages([
+                'sprint' => ["Cannot commit a sprint in status '{$sprint->status}'. Only sprints in status 'planned' can be committed."],
+            ]);
+        }
+
+        $validation = $this->sprintValidatePlan(
+            ['sprint_identifier' => $sprint->identifier],
+            $user
+        );
+
+        if ($validation['errors'] !== []) {
+            throw ValidationException::withMessages([
+                'sprint' => [
+                    "Cannot commit sprint plan. Blocking errors:\n  - "
+                    .implode("\n  - ", $this->formatValidationItems($validation['errors'])),
+                ],
+            ]);
+        }
+
+        if ($validation['warnings'] !== [] && ! $force) {
+            throw ValidationException::withMessages([
+                'sprint' => [
+                    "Sprint plan has warnings. Pass force=true to acknowledge and commit anyway:\n  - "
+                    .implode("\n  - ", $this->formatValidationItems($validation['warnings'])),
+                ],
+            ]);
+        }
 
         return DB::transaction(function () use ($sprint) {
             /** @var Sprint $locked */
@@ -196,7 +230,7 @@ trait ScrumSprintToolMethods
 
             if ($locked->status !== 'planned') {
                 throw ValidationException::withMessages([
-                    'sprint' => ["Cannot start a sprint in status '{$locked->status}'. Only sprints in status 'planned' can be started."],
+                    'sprint' => ["Cannot commit a sprint in status '{$locked->status}'. Only sprints in status 'planned' can be committed."],
                 ]);
             }
 
@@ -209,6 +243,24 @@ trait ScrumSprintToolMethods
 
             return $locked->format();
         });
+    }
+
+    /**
+     * Flatten validate_sprint_plan items into human-readable lines.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, string>
+     */
+    private function formatValidationItems(array $items): array
+    {
+        $lines = [];
+        foreach ($items as $item) {
+            $code = (string) ($item['code'] ?? 'unknown');
+            $message = (string) ($item['message'] ?? '');
+            $lines[] = "[{$code}] {$message}";
+        }
+
+        return $lines;
     }
 
     /** @param array<string, mixed> $params

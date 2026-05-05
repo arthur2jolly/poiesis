@@ -939,7 +939,7 @@ class ScrumItemPlacementTest extends TestCase
             $data['result']['tools'],
             fn ($t) => str_starts_with($t['name'], 'scrum_') || in_array($t['name'], [
                 'create_sprint', 'list_sprints', 'get_sprint', 'update_sprint', 'delete_sprint',
-                'start_sprint', 'close_sprint', 'cancel_sprint', 'add_to_sprint', 'remove_from_sprint',
+                'commit_sprint', 'close_sprint', 'cancel_sprint', 'add_to_sprint', 'remove_from_sprint',
                 'list_sprint_items', 'list_backlog', 'reorder_backlog', 'estimate_story', 'mark_ready',
                 'mark_unready', 'start_planning', 'add_to_planning', 'remove_from_planning', 'validate_sprint_plan',
             ], true)

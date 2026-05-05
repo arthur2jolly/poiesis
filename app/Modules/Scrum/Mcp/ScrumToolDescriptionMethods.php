@@ -102,15 +102,16 @@ trait ScrumToolDescriptionMethods
     }
 
     /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
-    private function getStartSprintToolDescription(): array
+    private function getCommitSprintToolDescription(): array
     {
         return [
-            'name' => 'start_sprint',
-            'description' => 'Start a sprint (planned -> active). Fails if another sprint is already active in the project.',
+            'name' => 'commit_sprint',
+            'description' => 'Commit a sprint plan (planned -> active). Internally runs validate_sprint_plan first: hard errors always abort; warnings abort unless force=true acknowledges them. Also fails if another sprint is already active in the project.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
                     'identifier' => ['type' => 'string'],
+                    'force' => ['type' => 'boolean', 'description' => 'When true, acknowledge non-blocking validation warnings and proceed anyway. Default false. Has no effect on hard errors.'],
                 ],
                 'required' => ['identifier'],
             ],
@@ -355,7 +356,7 @@ trait ScrumToolDescriptionMethods
     {
         return [
             'name' => 'validate_sprint_plan',
-            'description' => 'Diagnose a sprint before start. Read-only. Returns { ok, errors[], warnings[], summary } covering: empty_sprint (error), missing_estimation (error, per story), blocking_dependency (error, per unresolved dependency), over_capacity (warning), missing_goal (warning). Does not block start_sprint — purely informational. Works on any sprint status.',
+            'description' => 'Diagnose a sprint before commit. Read-only. Returns { ok, errors[], warnings[], summary } covering: empty_sprint (error), missing_estimation (error, per story), blocking_dependency (error, per unresolved dependency), over_capacity (warning), missing_goal (warning). commit_sprint runs the same checks internally — call this directly only when you want a dry-run snapshot. Works on any sprint status.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
