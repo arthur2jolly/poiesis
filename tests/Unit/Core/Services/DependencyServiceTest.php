@@ -170,11 +170,11 @@ class DependencyServiceTest extends TestCase
         $this->assertCount(0, $deps['blocked_by'], 'No cross-tenant blocker should leak into the response.');
         $this->assertCount(0, $deps['blocks']);
 
-        // Sanity: same query from Tenant B sees its own artefacts.
+        // Symmetric isolation: from Tenant B's side, the inverse "blocks"
+        // edge points to a Story owned by Tenant A and must also be filtered.
         app(TenantManager::class)->setTenant($tenantB);
         $depsFromB = $this->service->getDependencies($storyB);
-        $this->assertCount(1, $depsFromB['blocks']);
-        $this->assertSame($storyA->id, $depsFromB['blocks'][0]->id);
+        $this->assertCount(0, $depsFromB['blocks'], 'Cross-tenant inverse edge must not leak either.');
     }
 
     public function test_intra_tenant_blocker_still_resolves(): void
