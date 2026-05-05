@@ -20,6 +20,19 @@ use Illuminate\Validation\ValidationException;
 
 trait ScrumPlanningAndValidationToolMethods
 {
+    /**
+     * Single source of truth for the "plannable" predicate.
+     *
+     * A story is plannable when its statut is 'open' and ready=true.
+     * Both planningStart() (snapshot query) and validateStoriesForPlanning()
+     * (per-story validator) MUST honour these constants so the snapshot and
+     * the manual add path can never diverge for any combination — including
+     * the pathological draft+ready=true case (POIESIS-54).
+     */
+    private const PLANNABLE_STATUS = 'open';
+
+    private const PLANNABLE_REQUIRES_READY = true;
+
     // ===== POIESIS-7: Estimation & Definition of Ready =====
 
     /** @param array<string, mixed> $params
@@ -122,8 +135,8 @@ trait ScrumPlanningAndValidationToolMethods
         $engagedItems = $sprint->items()->with(['sprint', 'artifact.artifactable'])->get();
 
         $readyStories = Story::whereHas('epic', fn ($q) => $q->where('project_id', $sprint->project_id))
-            ->where('statut', 'open')
-            ->where('ready', true)
+            ->where('statut', self::PLANNABLE_STATUS)
+            ->where('ready', self::PLANNABLE_REQUIRES_READY)
             ->whereNotIn('id', $this->storyIdsInActivePlanningSprints($sprint->project_id))
             ->with('epic')
             ->orderByRaw('(rank IS NULL), rank ASC, created_at ASC')
@@ -522,19 +535,9 @@ trait ScrumPlanningAndValidationToolMethods
             }
 
             if ($mode === 'add') {
-                if ($model->statut === 'closed') {
-                    $violations[] = "{$id}: cannot plan a closed story.";
-
-                    continue;
-                }
-                if ($model->statut !== 'open') {
-                    $violations[] = "{$id}: must be open to plan.";
-
-                    continue;
-                }
-                if ($model->ready !== true) {
-                    $missing = $this->dorMissingFields($model);
-                    $violations[] = "{$id}: not ready (missing: ".implode(', ', $missing).').';
+                $gateViolation = $this->storyPlanningGateViolation($model);
+                if ($gateViolation !== null) {
+                    $violations[] = "{$id}: {$gateViolation}";
 
                     continue;
                 }
@@ -574,6 +577,31 @@ trait ScrumPlanningAndValidationToolMethods
         }
 
         return $resolved;
+    }
+
+    /**
+     * Per-story implementation of the plannable predicate, mirror of the
+     * planningStart() query. Returns null if the story passes the gate, or
+     * a violation message suitable for the add_to_planning error output.
+     *
+     * Single source of truth for the criteria via PLANNABLE_STATUS and
+     * PLANNABLE_REQUIRES_READY (POIESIS-54).
+     */
+    private function storyPlanningGateViolation(Story $story): ?string
+    {
+        if ($story->statut === 'closed') {
+            return 'cannot plan a closed story.';
+        }
+        if ($story->statut !== self::PLANNABLE_STATUS) {
+            return 'must be open to plan.';
+        }
+        if (self::PLANNABLE_REQUIRES_READY && $story->ready !== true) {
+            $missing = $this->dorMissingFields($story);
+
+            return 'not ready (missing: '.implode(', ', $missing).').';
+        }
+
+        return null;
     }
 
     /** @return array<int, string> */
