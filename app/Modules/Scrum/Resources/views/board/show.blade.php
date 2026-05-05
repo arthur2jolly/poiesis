@@ -10,12 +10,12 @@
                 {{ $sprint ? $sprint->identifier.' - '.$sprint->name : 'Aucun sprint actif selectionne.' }}
             </p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('scrum.board', $project->code) }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Sprint actif</a>
-            @foreach($sprints as $option)
-                <a href="{{ route('scrum.board.sprint', [$project->code, $option->identifier]) }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">{{ $option->identifier }}</a>
-            @endforeach
-        </div>
+        @if($sprint && $sprint->status !== 'active')
+            {{-- Affordance pour revenir au sprint actif uniquement quand on consulte un sprint historique --}}
+            <div>
+                <a href="{{ route('scrum.board', $project->code) }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Sprint actif</a>
+            </div>
+        @endif
     </div>
 
     @if($columns->isEmpty())
