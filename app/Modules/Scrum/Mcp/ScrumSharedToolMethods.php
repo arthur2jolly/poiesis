@@ -25,7 +25,7 @@ trait ScrumSharedToolMethods
         }
     }
 
-    private function assertNoActiveSprintInProject(string $projectId, string $excludeSprintId): void
+    private function assertNoActiveSprintInProject(string $projectId, string $excludeSprintId, string $errorKey = 'sprint'): void
     {
         /** @var Sprint|null $existing */
         $existing = Sprint::where('project_id', $projectId)
@@ -37,7 +37,7 @@ trait ScrumSharedToolMethods
         if ($existing !== null) {
             $code = (string) Project::whereKey($projectId)->value('code');
             throw ValidationException::withMessages([
-                'sprint' => ["Project '{$code}' already has an active sprint ({$existing->identifier}). Close or cancel it before starting a new one."],
+                $errorKey => ["Project '{$code}' already has an active sprint ({$existing->identifier}). Close or cancel it before starting a new one."],
             ]);
         }
     }

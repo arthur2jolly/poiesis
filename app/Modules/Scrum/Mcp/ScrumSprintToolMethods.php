@@ -182,7 +182,21 @@ trait ScrumSprintToolMethods
         return ['message' => 'Sprint deleted.'];
     }
 
-    /** @param array<string, mixed> $params
+    /**
+     * commit_sprint MCP tool — POIESIS-10 / POIESIS-49.
+     *
+     * Stable error keys exposed to MCP consumers:
+     *   - commit.sprint_not_planned : sprint is not in status 'planned'
+     *   - commit.has_errors         : validate_sprint_plan returned blocking errors
+     *   - commit.another_active     : another sprint is already active in the project
+     *
+     * Soft-fail response (force=false + warnings present, no transition done):
+     *   { state: 'warnings_pending', warnings: [...], sprint_identifier: 'PROJ-S1' }
+     *
+     * Success response:
+     *   { sprint: { ...format() }, warnings: [...] }   // warnings non-empty only when force=true
+     *
+     * @param  array<string, mixed>  $params
      * @return array<string, mixed>
      */
     private function sprintCommit(array $params, User $user): array
@@ -191,57 +205,55 @@ trait ScrumSprintToolMethods
         $sprint = $this->findSprint((string) ($params['identifier'] ?? ''), $user);
         $force = (bool) ($params['force'] ?? false);
 
-        // Status check up-front so callers committing a non-planned sprint
-        // still get the precise transition error rather than spurious
-        // validation feedback. A second check inside the transaction below
-        // remains the actual race-safe gate.
+        // Status precheck (advisory): the lock-and-recheck inside the
+        // transaction is the actual race-safe gate, but this short-circuit
+        // gives non-planned callers a precise transition error rather than
+        // spurious validation feedback.
         if ($sprint->status !== 'planned') {
             throw ValidationException::withMessages([
-                'sprint' => ["Cannot commit a sprint in status '{$sprint->status}'. Only sprints in status 'planned' can be committed."],
+                'commit.sprint_not_planned' => ["Cannot commit a sprint in status '{$sprint->status}'. Only sprints in status 'planned' can be committed."],
             ]);
         }
 
-        $validation = $this->sprintValidatePlan(
-            ['sprint_identifier' => $sprint->identifier],
-            $user
-        );
+        $validation = $this->computeSprintValidation($sprint);
 
         if ($validation['errors'] !== []) {
             throw ValidationException::withMessages([
-                'sprint' => [
-                    "Cannot commit sprint plan. Blocking errors:\n  - "
-                    .implode("\n  - ", $this->formatValidationItems($validation['errors'])),
-                ],
+                'commit.has_errors' => $this->formatValidationItems($validation['errors']),
             ]);
         }
 
+        // Soft-fail: warnings present and not acknowledged. No exception, no
+        // transition — caller must reissue with force=true to confirm.
         if ($validation['warnings'] !== [] && ! $force) {
-            throw ValidationException::withMessages([
-                'sprint' => [
-                    "Sprint plan has warnings. Pass force=true to acknowledge and commit anyway:\n  - "
-                    .implode("\n  - ", $this->formatValidationItems($validation['warnings'])),
-                ],
-            ]);
+            return [
+                'state' => 'warnings_pending',
+                'warnings' => $validation['warnings'],
+                'sprint_identifier' => $sprint->identifier,
+            ];
         }
 
-        return DB::transaction(function () use ($sprint) {
+        return DB::transaction(function () use ($sprint, $validation) {
             /** @var Sprint $locked */
             $locked = Sprint::whereKey($sprint->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== 'planned') {
                 throw ValidationException::withMessages([
-                    'sprint' => ["Cannot commit a sprint in status '{$locked->status}'. Only sprints in status 'planned' can be committed."],
+                    'commit.sprint_not_planned' => ["Cannot commit a sprint in status '{$locked->status}'. Only sprints in status 'planned' can be committed."],
                 ]);
             }
 
             Project::whereKey($locked->project_id)->lockForUpdate()->firstOrFail();
-            $this->assertNoActiveSprintInProject($locked->project_id, $locked->id);
+            $this->assertNoActiveSprintInProject($locked->project_id, $locked->id, 'commit.another_active');
 
             $locked->status = 'active';
             $locked->save();
             $locked->loadCount('items');
 
-            return $locked->format();
+            return [
+                'sprint' => $locked->format(),
+                'warnings' => $validation['warnings'],
+            ];
         });
     }
 
