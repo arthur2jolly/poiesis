@@ -173,9 +173,10 @@ it('P-02: start_planning computes engaged_points from stories only (tasks exclud
 it('P-03: start_planning counts story without story_points as 0', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project'], 'planned', 10);
-    $story = planStory($ctx['project'], ['statut' => 'open', 'story_points' => null]);
+    // ready=true to satisfy add_to_sprint's DoR gate; story_points stays null
+    // to verify engaged_points handles missing estimation safely.
+    $story = planStory($ctx['project'], ['statut' => 'open', 'story_points' => null, 'ready' => true]);
 
-    // Force attach via add_to_sprint (permissive)
     planOk(mcpPlan('add_to_sprint', [
         'sprint_identifier' => $sprint->identifier,
         'item_identifier' => $story->identifier,
@@ -759,8 +760,9 @@ it('P-39: remove_from_planning rejects sprint in status active', function () {
 it('P-40: remove_from_planning has no DoR check: story without story_points can be removed', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
-    // Force attach via add_to_sprint (permissive, no DoR)
-    $story = planStory($ctx['project'], ['statut' => 'open', 'story_points' => null, 'ready' => false]);
+    // ready=true to attach via add_to_sprint; story_points stays null to
+    // verify remove_from_planning does not enforce DoR on the way out.
+    $story = planStory($ctx['project'], ['statut' => 'open', 'story_points' => null, 'ready' => true]);
 
     planOk(mcpPlan('add_to_sprint', [
         'sprint_identifier' => $sprint->identifier,
