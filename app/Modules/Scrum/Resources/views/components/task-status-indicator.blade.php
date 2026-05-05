@@ -1,13 +1,37 @@
 @props(['status', 'size' => 'sm'])
 
 @php
-    $dimensions = $size === 'md' ? 'h-4 w-4 text-[10px]' : 'h-3 w-3 text-[9px]';
+    $box = $size === 'md' ? 'h-4 w-4' : 'h-3.5 w-3.5';
+
+    // Labels sans accents : convention du repo + assertions Pest existantes
+    // (tests/Feature/Modules/Scrum/ScrumHtmlPagesTest.php).
+    $label = match ($status) {
+        'closed' => 'Tache terminee',
+        'open' => 'Tache en cours de developpement',
+        default => 'Tache a faire',
+    };
 @endphp
 
-@if($status === 'open')
-    <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" aria-label="Tache en cours de developpement"></span>
-@elseif($status === 'closed')
-    <span class="inline-flex {{ $dimensions }} items-center justify-center rounded-full bg-emerald-600 font-bold leading-none text-white" aria-label="Tache terminee">&#10003;</span>
+@if($status === 'closed')
+    {{-- Done : disque emerald rempli + check blanc --}}
+    <svg class="{{ $box }} shrink-0 text-emerald-500" viewBox="0 0 16 16" fill="currentColor"
+         role="img" aria-label="{{ $label }}" title="{{ $label }}">
+        <circle cx="8" cy="8" r="7" />
+        <path d="m4.8 8.2 2.2 2.2L11.4 6" fill="none" stroke="white" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+@elseif($status === 'open')
+    {{-- In progress : pie-chart à demi-rempli, convention Linear / Height / Notion --}}
+    <svg class="{{ $box }} shrink-0 text-indigo-600" viewBox="0 0 16 16" fill="none"
+         role="img" aria-label="{{ $label }}" title="{{ $label }}">
+        <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.5" />
+        <path d="M8 2 A6 6 0 0 1 8 14 Z" fill="currentColor" />
+    </svg>
 @else
-    <span class="inline-block h-2 w-2 rounded-full bg-slate-300" aria-hidden="true"></span>
+    {{-- To do : cercle creux slate, neutre --}}
+    <svg class="{{ $box }} shrink-0 text-slate-300" viewBox="0 0 16 16" fill="none"
+         role="img" aria-label="{{ $label }}" title="{{ $label }}">
+        <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.5"
+                stroke-dasharray="2.5 2" />
+    </svg>
 @endif
