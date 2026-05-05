@@ -3,12 +3,12 @@
 @php
     $box = $size === 'md' ? 'h-4 w-4' : 'h-3.5 w-3.5';
 
-    // Labels sans accents : convention du repo + assertions Pest existantes
-    // (tests/Feature/Modules/Scrum/ScrumHtmlPagesTest.php).
+    // Specific phrases (not just "Done"/"To Do") so they cannot collide with
+    // column headers when tests assert on substrings.
     $label = match ($status) {
-        'closed' => 'Tache terminee',
-        'open' => 'Tache en cours de developpement',
-        default => 'Tache a faire',
+        'closed' => 'Task done',
+        'open' => 'Task in progress',
+        default => 'Task to do',
     };
 @endphp
 
