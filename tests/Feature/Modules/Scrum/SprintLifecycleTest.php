@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Core\Models\ApiToken;
+use App\Core\Models\Artifact;
 use App\Core\Models\Epic;
 use App\Core\Models\Project;
 use App\Core\Models\ProjectMember;
@@ -49,6 +50,33 @@ function lifecycleSetup(string $code = 'LFC'): array
     return ['tenant' => $tenant, 'user' => $user, 'token' => $raw['raw'], 'project' => $project];
 }
 
+/**
+ * Seed a sprint with one valid plan item so commit_sprint passes
+ * validate_sprint_plan (no empty_sprint, no missing_estimation).
+ */
+function seedReadyItem(Sprint $sprint): SprintItem
+{
+    $epic = Epic::factory()->create(['project_id' => $sprint->project_id]);
+    $story = Story::factory()->create([
+        'epic_id' => $epic->id,
+        'statut' => 'open',
+        'ready' => true,
+        'story_points' => 3,
+        'description' => 'Seeded for commit_sprint validation',
+    ]);
+    /** @var Artifact $artifact */
+    $artifact = Artifact::where('artifactable_id', $story->id)
+        ->where('artifactable_type', Story::class)
+        ->firstOrFail();
+
+    return SprintItem::create([
+        'tenant_id' => $sprint->tenant_id,
+        'sprint_id' => $sprint->id,
+        'artifact_id' => $artifact->id,
+        'position' => 0,
+    ]);
+}
+
 function makeSprint(Project $project, string $status = 'planned', ?string $closedAt = null): Sprint
 {
     static $counter = 0;
@@ -58,6 +86,7 @@ function makeSprint(Project $project, string $status = 'planned', ?string $close
         'tenant_id' => $project->tenant_id,
         'project_id' => $project->id,
         'name' => 'Sprint '.$counter,
+        'goal' => 'Default sprint goal for tests',
         'start_date' => '2026-05-01',
         'end_date' => '2026-05-15',
         'status' => $status,
@@ -107,7 +136,7 @@ it('exposes the 3 lifecycle tools in tools()', function () {
 
     $response->assertOk();
     $names = array_column($response->json('result.tools'), 'name');
-    expect($names)->toContain('start_sprint');
+    expect($names)->toContain('commit_sprint');
     expect($names)->toContain('close_sprint');
     expect($names)->toContain('cancel_sprint');
 });
@@ -121,15 +150,16 @@ it('rejects unknown tool dispatch', function () {
 });
 
 // ============================================================
-// start_sprint — happy path
+// commit_sprint — happy path
 // ============================================================
 
 it('starts a planned sprint', function () {
     $ctx = lifecycleSetup();
     $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
 
     $result = assertLifecycleSuccess(
-        mcpLifecycleCall('start_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
     );
 
     expect($result['status'])->toBe('active');
@@ -138,7 +168,7 @@ it('starts a planned sprint', function () {
 });
 
 // ============================================================
-// start_sprint — invalid transitions
+// commit_sprint — invalid transitions
 // ============================================================
 
 it('refuses to start a sprint already active', function () {
@@ -146,8 +176,8 @@ it('refuses to start a sprint already active', function () {
     $sprint = makeSprint($ctx['project'], 'active');
 
     assertLifecycleError(
-        mcpLifecycleCall('start_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
-        "Cannot start a sprint in status 'active'"
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        "Cannot commit a sprint in status 'active'"
     );
 });
 
@@ -156,8 +186,8 @@ it('refuses to start a completed sprint', function () {
     $sprint = makeSprint($ctx['project'], 'completed');
 
     assertLifecycleError(
-        mcpLifecycleCall('start_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
-        "Cannot start a sprint in status 'completed'"
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        "Cannot commit a sprint in status 'completed'"
     );
 });
 
@@ -166,21 +196,22 @@ it('refuses to start a cancelled sprint', function () {
     $sprint = makeSprint($ctx['project'], 'cancelled');
 
     assertLifecycleError(
-        mcpLifecycleCall('start_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
-        "Cannot start a sprint in status 'cancelled'"
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        "Cannot commit a sprint in status 'cancelled'"
     );
 });
 
 // ============================================================
-// start_sprint — uniqueness
+// commit_sprint — uniqueness
 // ============================================================
 
 it('refuses to start a sprint when another is already active in the same project', function () {
     $ctx = lifecycleSetup();
     $s1 = makeSprint($ctx['project'], 'active');
     $s2 = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($s2);
 
-    $response = mcpLifecycleCall('start_sprint', ['identifier' => $s2->identifier], $ctx['token']);
+    $response = mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token']);
     $response->assertOk();
     $data = $response->json();
     expect($data)->toHaveKey('error');
@@ -193,9 +224,10 @@ it('allows starting a sprint after the previous one is closed', function () {
     $ctx = lifecycleSetup();
     $s1 = makeSprint($ctx['project'], 'active');
     $s2 = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($s2);
 
     assertLifecycleSuccess(mcpLifecycleCall('close_sprint', ['identifier' => $s1->identifier], $ctx['token']));
-    $result = assertLifecycleSuccess(mcpLifecycleCall('start_sprint', ['identifier' => $s2->identifier], $ctx['token']));
+    $result = assertLifecycleSuccess(mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token']));
 
     expect($result['status'])->toBe('active');
     expect($s1->fresh()->status)->toBe('completed');
@@ -205,9 +237,10 @@ it('allows starting a sprint after the previous one is cancelled', function () {
     $ctx = lifecycleSetup();
     $s1 = makeSprint($ctx['project'], 'active');
     $s2 = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($s2);
 
     assertLifecycleSuccess(mcpLifecycleCall('cancel_sprint', ['identifier' => $s1->identifier], $ctx['token']));
-    $result = assertLifecycleSuccess(mcpLifecycleCall('start_sprint', ['identifier' => $s2->identifier], $ctx['token']));
+    $result = assertLifecycleSuccess(mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token']));
 
     expect($result['status'])->toBe('active');
     expect($s1->fresh()->status)->toBe('cancelled');
@@ -229,12 +262,89 @@ it('isolates active uniqueness per project (cross-project in same tenant)', func
 
     makeSprint($ctx['project'], 'active');
     $sB = makeSprint($projectB, 'planned');
+    seedReadyItem($sB);
 
     $result = assertLifecycleSuccess(
-        mcpLifecycleCall('start_sprint', ['identifier' => $sB->identifier], $ctx['token'])
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sB->identifier], $ctx['token'])
     );
 
     expect($result['status'])->toBe('active');
+});
+
+// ============================================================
+// commit_sprint — internal validate_sprint_plan + force flag (POIESIS-55)
+// ============================================================
+
+it('refuses to commit an empty sprint (empty_sprint blocking error)', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    // No items seeded.
+
+    assertLifecycleError(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        '[empty_sprint]'
+    );
+    expect($sprint->fresh()->status)->toBe('planned');
+});
+
+it('refuses to commit when warnings are present and force is not set', function () {
+    $ctx = lifecycleSetup();
+    // Sprint with no goal triggers missing_goal warning.
+    $sprint = Sprint::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'Warn Sprint',
+        'goal' => null,
+        'start_date' => '2026-05-01',
+        'end_date' => '2026-05-15',
+        'status' => 'planned',
+    ]);
+    seedReadyItem($sprint);
+
+    assertLifecycleError(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token']),
+        'force=true'
+    );
+    expect($sprint->fresh()->status)->toBe('planned');
+});
+
+it('commits a sprint with warnings when force=true', function () {
+    $ctx = lifecycleSetup();
+    $sprint = Sprint::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'Force Sprint',
+        'goal' => null,
+        'start_date' => '2026-05-01',
+        'end_date' => '2026-05-15',
+        'status' => 'planned',
+    ]);
+    seedReadyItem($sprint);
+
+    $result = assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', [
+            'identifier' => $sprint->identifier,
+            'force' => true,
+        ], $ctx['token'])
+    );
+
+    expect($result['status'])->toBe('active');
+    expect($sprint->fresh()->status)->toBe('active');
+});
+
+it('does not let force=true bypass blocking errors', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    // Empty sprint -> blocking error. force must NOT be enough.
+
+    assertLifecycleError(
+        mcpLifecycleCall('commit_sprint', [
+            'identifier' => $sprint->identifier,
+            'force' => true,
+        ], $ctx['token']),
+        '[empty_sprint]'
+    );
+    expect($sprint->fresh()->status)->toBe('planned');
 });
 
 it('refuses lifecycle tools when scrum module is inactive for the sprint project', function () {
@@ -243,7 +353,7 @@ it('refuses lifecycle tools when scrum module is inactive for the sprint project
     $sprint = makeSprint($ctx['project'], 'planned');
 
     foreach ([
-        'start_sprint' => 'planned',
+        'commit_sprint' => 'planned',
         'close_sprint' => 'planned',
         'cancel_sprint' => 'planned',
     ] as $tool => $expectedStatus) {
@@ -394,6 +504,7 @@ it('cancels an active sprint and frees the active slot', function () {
     $ctx = lifecycleSetup();
     $s1 = makeSprint($ctx['project'], 'active');
     $s2 = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($s2);
 
     assertLifecycleSuccess(mcpLifecycleCall('cancel_sprint', ['identifier' => $s1->identifier], $ctx['token']));
 
@@ -401,7 +512,7 @@ it('cancels an active sprint and frees the active slot', function () {
     expect($s1->fresh()->closed_at)->toBeNull();
 
     $result = assertLifecycleSuccess(
-        mcpLifecycleCall('start_sprint', ['identifier' => $s2->identifier], $ctx['token'])
+        mcpLifecycleCall('commit_sprint', ['identifier' => $s2->identifier], $ctx['token'])
     );
     expect($result['status'])->toBe('active');
 });
@@ -452,7 +563,7 @@ it('rejects lifecycle tools when user lacks CRUD permission', function () {
         'position' => 'viewer',
     ]);
 
-    foreach (['start_sprint', 'close_sprint', 'cancel_sprint'] as $tool) {
+    foreach (['commit_sprint', 'close_sprint', 'cancel_sprint'] as $tool) {
         assertLifecycleError(
             mcpLifecycleCall($tool, ['identifier' => $sprint->identifier], $raw['raw']),
             'You do not have permission to manage sprints.'
@@ -471,7 +582,7 @@ it('hides sprints of other projects behind Sprint not found', function () {
 
     $sprint = makeSprint($ctxB['project'], 'planned');
 
-    foreach (['start_sprint', 'close_sprint', 'cancel_sprint'] as $tool) {
+    foreach (['commit_sprint', 'close_sprint', 'cancel_sprint'] as $tool) {
         assertLifecycleError(
             mcpLifecycleCall($tool, ['identifier' => $sprint->identifier], $ctxA['token']),
             'Sprint not found.'
@@ -487,7 +598,7 @@ it('rejects malformed identifier', function () {
     $ctx = lifecycleSetup();
 
     assertLifecycleError(
-        mcpLifecycleCall('start_sprint', ['identifier' => 'not-an-id'], $ctx['token']),
+        mcpLifecycleCall('commit_sprint', ['identifier' => 'not-an-id'], $ctx['token']),
         'Invalid sprint identifier format.'
     );
 });
@@ -496,7 +607,7 @@ it('rejects non-existent sprint number with Sprint not found', function () {
     $ctx = lifecycleSetup();
 
     assertLifecycleError(
-        mcpLifecycleCall('start_sprint', ['identifier' => 'LFC-S99'], $ctx['token']),
+        mcpLifecycleCall('commit_sprint', ['identifier' => 'LFC-S99'], $ctx['token']),
         'Sprint not found.'
     );
 });

@@ -66,6 +66,7 @@ function planSprint(Project $project, string $status = 'planned', ?int $capacity
         'tenant_id' => $project->tenant_id,
         'project_id' => $project->id,
         'name' => 'Planning Sprint',
+        'goal' => 'Default planning sprint goal',
         'start_date' => '2026-06-01',
         'end_date' => '2026-06-15',
         'status' => $status,
@@ -856,7 +857,7 @@ it('P-44: start_planning then add_to_planning then start_planning reflects updat
     expect($after['ratio_engaged'])->toBe(0.4);
 });
 
-it('P-45: add_to_planning then start_sprint then add_to_planning fails (sprint now active)', function () {
+it('P-45: add_to_planning then commit_sprint then add_to_planning fails (sprint now active)', function () {
     $ctx = planSetup();
     $sprint = planSprint($ctx['project']);
     $s1 = planReadyStory($ctx['project']);
@@ -868,7 +869,7 @@ it('P-45: add_to_planning then start_sprint then add_to_planning fails (sprint n
     ], $ctx['manager_token']));
 
     // Transition to active
-    planOk(mcpPlan('start_sprint', [
+    planOk(mcpPlan('commit_sprint', [
         'identifier' => $sprint->identifier,
     ], $ctx['manager_token']));
 

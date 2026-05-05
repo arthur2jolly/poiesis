@@ -761,7 +761,7 @@ it('V-34: tools/list includes validate_sprint_plan when scrum module is active',
     // Scrum module now has 20 tools (19 from POIESIS-2..8 + validate_sprint_plan)
     $scrumToolNames = [
         'create_sprint', 'list_sprints', 'get_sprint', 'update_sprint', 'delete_sprint',
-        'start_sprint', 'close_sprint', 'cancel_sprint',
+        'commit_sprint', 'close_sprint', 'cancel_sprint',
         'add_to_sprint', 'remove_from_sprint', 'list_sprint_items',
         'list_backlog', 'reorder_backlog',
         'estimate_story', 'mark_ready', 'mark_unready',
