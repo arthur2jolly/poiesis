@@ -2,6 +2,8 @@
 
 namespace App\Core\Services;
 
+use App\Core\Models\Story;
+use App\Core\Models\Task;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -128,10 +130,36 @@ class DependencyService
 
         foreach ($grouped as $type => $group) {
             $ids = $group->pluck($idCol)->all();
-            $models = $type::whereIn('id', $ids)->get()->all();
+            $models = $this->loadByType((string) $type, $ids);
             $result = array_merge($result, $models);
         }
 
         return $result;
+    }
+
+    /**
+     * Load models by morph type with the current tenant scope applied.
+     *
+     * Story/Task tables have no tenant_id column. We rely on the existing
+     * BelongsToTenant scope of Project (and Epic via project) so a blocker
+     * resolved across tenants is silently dropped instead of leaking
+     * identifier/status to the response.
+     *
+     * @param  array<int, string>  $ids
+     * @return array<int, Model>
+     */
+    private function loadByType(string $type, array $ids): array
+    {
+        return match ($type) {
+            Story::class => Story::whereIn('id', $ids)
+                ->whereHas('epic.project')
+                ->get()
+                ->all(),
+            Task::class => Task::whereIn('id', $ids)
+                ->whereHas('project')
+                ->get()
+                ->all(),
+            default => $type::whereIn('id', $ids)->get()->all(),
+        };
     }
 }
