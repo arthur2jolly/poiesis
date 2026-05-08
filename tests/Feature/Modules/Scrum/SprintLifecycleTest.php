@@ -174,6 +174,14 @@ it('starts a planned sprint', function () {
     $ctx = lifecycleSetup();
     $sprint = makeSprint($ctx['project'], 'planned');
     seedReadyItem($sprint);
+    // Configure a To Do column so commit_sprint's auto-placement (POIESIS-106)
+    // does not surface a `commit.no_board_columns` warning on this happy path.
+    ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'To Do',
+        'position' => 0,
+    ]);
 
     $result = assertLifecycleSuccess(
         mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
@@ -183,6 +191,7 @@ it('starts a planned sprint', function () {
     expect($result['sprint']['status'])->toBe('active');
     expect($result['sprint']['closed_at'])->toBeNull();
     expect($result['warnings'])->toBe([]);
+    expect($result['placed_count'])->toBe(1);
     expect($sprint->fresh()->status)->toBe('active');
 });
 
