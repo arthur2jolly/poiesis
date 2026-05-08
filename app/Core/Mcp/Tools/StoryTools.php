@@ -13,6 +13,7 @@ use App\Core\Models\Story;
 use App\Core\Models\User;
 use App\Core\Services\DependencyService;
 use App\Core\Support\Role;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +36,8 @@ class StoryTools implements McpToolInterface
             $this->getCreateStoryToolDescription(),
             $this->getCreateStoriesToolDescription(),
             $this->getListEpicStoriesToolDescription(),
+            $this->getStartStoryDescription(),
+            $this->getUnstartStoryDescription(),
         ];
     }
 
@@ -61,6 +64,8 @@ class StoryTools implements McpToolInterface
             'update_story' => $this->updateStory($params, $user),
             'delete_story' => $this->deleteStory($params, $user),
             'update_story_status' => $this->updateStoryStatus($params, $user),
+            'start_story' => $this->startStory($params, $user),
+            'unstart_story' => $this->unstartStory($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -223,7 +228,7 @@ class StoryTools implements McpToolInterface
     {
         return [
             'name' => 'update_story_status',
-            'description' => 'Change the status of a story (draft->open->closed, closed->open)',
+            'description' => 'Change the status of a story (draft->open->closed, closed->open). Side-effect (POIESIS-107): the first transition to `open` auto-fills started_at = now() if it was null. Subsequent transitions never overwrite or clear started_at — use unstart_story to reset.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
@@ -231,6 +236,38 @@ class StoryTools implements McpToolInterface
                     'statut' => ['type' => 'string'],
                 ],
                 'required' => ['identifier', 'statut'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getStartStoryDescription(): array
+    {
+        return [
+            'name' => 'start_story',
+            'description' => 'Mark a story as started by setting started_at = now(). Idempotent: a second call leaves the original timestamp untouched. Does NOT change the story statut. Stable error key: story.cannot_start_closed when statut is closed. Useful to flag a story as in-progress while still in draft (e.g. analysis phase) without going through update_story_status.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getUnstartStoryDescription(): array
+    {
+        return [
+            'name' => 'unstart_story',
+            'description' => 'Clear started_at on a story (back to null). Idempotent. Does NOT change the story statut. Use to correct a wrongly-started story or to reset the WIP indicator.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
             ],
         ];
     }
@@ -464,6 +501,65 @@ class StoryTools implements McpToolInterface
         $story->loadCount('tasks');
 
         return $story->format();
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function startStory(array $params, User $user): array
+    {
+        $story = $this->loadStoryForStartedToggle((string) ($params['identifier'] ?? ''), $user);
+
+        if ($story->statut === 'closed') {
+            throw ValidationException::withMessages([
+                'story.cannot_start_closed' => ["[story.cannot_start_closed] Cannot start story '{$story->identifier}': statut is 'closed'."],
+            ]);
+        }
+
+        if ($story->started_at === null) {
+            $story->started_at = Carbon::now();
+            $story->save();
+        }
+
+        $story->loadCount('tasks');
+
+        return $story->format();
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function unstartStory(array $params, User $user): array
+    {
+        $story = $this->loadStoryForStartedToggle((string) ($params['identifier'] ?? ''), $user);
+
+        if ($story->started_at !== null) {
+            $story->started_at = null;
+            $story->save();
+        }
+
+        $story->loadCount('tasks');
+
+        return $story->format();
+    }
+
+    private function loadStoryForStartedToggle(string $identifier, User $user): Story
+    {
+        if (! Role::canCrudArtifacts($user->role)) {
+            throw ValidationException::withMessages([
+                'story' => ['You do not have permission to update stories.'],
+            ]);
+        }
+
+        $story = $this->resolveStory($identifier);
+
+        if (! ProjectMember::where('project_id', $story->epic->project_id)->where('user_id', $user->id)->exists()) {
+            throw ValidationException::withMessages(['project' => ['Access denied.']]);
+        }
+
+        return $story;
     }
 
     private function validateStoryData(array $data): void

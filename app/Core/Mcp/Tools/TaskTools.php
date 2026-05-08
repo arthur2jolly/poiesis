@@ -13,6 +13,7 @@ use App\Core\Models\Task;
 use App\Core\Models\User;
 use App\Core\Services\DependencyService;
 use App\Core\Support\Role;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +36,8 @@ class TaskTools implements McpToolInterface
             $this->getUpdateTaskDescription(),
             $this->getDeleteTaskDescription(),
             $this->getUpdateTaskStatusDescription(),
+            $this->getStartTaskDescription(),
+            $this->getUnstartTaskDescription(),
         ];
     }
 
@@ -61,6 +64,8 @@ class TaskTools implements McpToolInterface
             'update_task' => $this->updateTask($params, $user),
             'delete_task' => $this->deleteTask($params, $user),
             'update_task_status' => $this->updateTaskStatus($params, $user),
+            'start_task' => $this->startTask($params, $user),
+            'unstart_task' => $this->unstartTask($params, $user),
             default => throw new \InvalidArgumentException("Unknown tool: {$toolName}"),
         };
     }
@@ -220,7 +225,7 @@ class TaskTools implements McpToolInterface
     {
         return [
             'name' => 'update_task_status',
-            'description' => 'Change the status of a task (draft->open->closed, closed->open)',
+            'description' => 'Change the status of a task (draft->open->closed, closed->open). Side-effect (POIESIS-107): the first transition to `open` auto-fills started_at = now() if it was null. Subsequent transitions never overwrite or clear started_at — use unstart_task to reset.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
@@ -228,6 +233,38 @@ class TaskTools implements McpToolInterface
                     'statut' => ['type' => 'string'],
                 ],
                 'required' => ['identifier', 'statut'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getStartTaskDescription(): array
+    {
+        return [
+            'name' => 'start_task',
+            'description' => 'Mark a task as started by setting started_at = now(). Idempotent: a second call leaves the original timestamp untouched. Does NOT change the task statut. Stable error key: task.cannot_start_closed when statut is closed. Useful to flag a task as in-progress while still in draft (e.g. analysis phase) without going through update_task_status.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
+    private function getUnstartTaskDescription(): array
+    {
+        return [
+            'name' => 'unstart_task',
+            'description' => 'Clear started_at on a task (back to null). Idempotent. Does NOT change the task statut. Use to correct a wrongly-started task or to reset the WIP indicator.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'identifier' => ['type' => 'string'],
+                ],
+                'required' => ['identifier'],
             ],
         ];
     }
@@ -459,6 +496,61 @@ class TaskTools implements McpToolInterface
         $task->transitionStatus($params['statut']);
 
         return $task->format();
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function startTask(array $params, User $user): array
+    {
+        $task = $this->loadTaskForStartedToggle((string) ($params['identifier'] ?? ''), $user);
+
+        if ($task->statut === 'closed') {
+            throw ValidationException::withMessages([
+                'task.cannot_start_closed' => ["[task.cannot_start_closed] Cannot start task '{$task->identifier}': statut is 'closed'."],
+            ]);
+        }
+
+        if ($task->started_at === null) {
+            $task->started_at = Carbon::now();
+            $task->save();
+        }
+
+        return $task->format();
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function unstartTask(array $params, User $user): array
+    {
+        $task = $this->loadTaskForStartedToggle((string) ($params['identifier'] ?? ''), $user);
+
+        if ($task->started_at !== null) {
+            $task->started_at = null;
+            $task->save();
+        }
+
+        return $task->format();
+    }
+
+    private function loadTaskForStartedToggle(string $identifier, User $user): Task
+    {
+        if (! Role::canCrudArtifacts($user->role)) {
+            throw ValidationException::withMessages([
+                'task' => ['You do not have permission to update tasks.'],
+            ]);
+        }
+
+        $task = $this->resolveTask($identifier);
+
+        if (! ProjectMember::where('project_id', $task->project_id)->where('user_id', $user->id)->exists()) {
+            throw ValidationException::withMessages(['project' => ['Access denied.']]);
+        }
+
+        return $task;
     }
 
     private function validateTaskData(array $data): void

@@ -1153,7 +1153,7 @@ parameters:
 			path: app/Core/Mcp/Tools/StoryTools.php
 
 		-
-			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array, array, array, array\}\.$#'
+			message: '#^Method App\\Core\\Mcp\\Tools\\StoryTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array, array, array, array, \.\.\.\}\.$#'
 			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/StoryTools.php
@@ -1327,7 +1327,7 @@ parameters:
 			path: app/Core/Mcp/Tools/TaskTools.php
 
 		-
-			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array, array, array, array\}\.$#'
+			message: '#^Method App\\Core\\Mcp\\Tools\\TaskTools\:\:tools\(\) should return array\<int, array\{name\: string, description\: string, inputSchema\: array\<string, mixed\>\}\> but returns array\{array, array, array, array, array, array, array, array, \.\.\.\}\.$#'
 			identifier: return.type
 			count: 1
 			path: app/Core/Mcp/Tools/TaskTools.php

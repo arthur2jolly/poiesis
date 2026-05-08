@@ -50,6 +50,9 @@ class ScrumHtmlPagesTest extends TestCase
             'description' => "Charger les stories du sprint.\nInclure les taches enfants dans le rendu.",
             'ordre' => 0,
             'statut' => 'open',
+            // POIESIS-107: 'Task in progress' label is now reserved to started
+            // tasks. Seed started_at to keep the original assertion meaningful.
+            'started_at' => now(),
         ]);
         $secondTask = Task::factory()->create([
             'project_id' => $project->id,

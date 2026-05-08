@@ -3,7 +3,7 @@
 <li class="px-3 py-2 text-sm">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-2">
-            @include('scrum::components.task-status-indicator', ['status' => $task['status'], 'size' => 'md'])
+            @include('scrum::components.task-status-indicator', ['status' => $task['status'], 'isStarted' => $task['is_started'] ?? false, 'size' => 'md'])
             <div class="min-w-0">
                 <span class="font-mono text-indigo-700">{{ $task['identifier'] }}</span>
                 <span class="text-slate-800">{{ $task['title'] }}</span>
