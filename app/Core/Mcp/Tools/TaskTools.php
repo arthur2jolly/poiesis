@@ -505,7 +505,7 @@ class TaskTools implements McpToolInterface
 
         if ($task->statut === 'closed') {
             throw ValidationException::withMessages([
-                'task.cannot_start_closed' => ["Cannot start task '{$task->identifier}': statut is 'closed'."],
+                'task.cannot_start_closed' => ["[task.cannot_start_closed] Cannot start task '{$task->identifier}': statut is 'closed'."],
             ]);
         }
 

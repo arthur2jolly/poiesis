@@ -510,7 +510,7 @@ class StoryTools implements McpToolInterface
 
         if ($story->statut === 'closed') {
             throw ValidationException::withMessages([
-                'story.cannot_start_closed' => ["Cannot start story '{$story->identifier}': statut is 'closed'."],
+                'story.cannot_start_closed' => ["[story.cannot_start_closed] Cannot start story '{$story->identifier}': statut is 'closed'."],
             ]);
         }
 
