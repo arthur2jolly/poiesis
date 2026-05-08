@@ -239,6 +239,7 @@ class StoryTools implements McpToolInterface
         ];
     }
 
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
     private function getStartStoryDescription(): array
     {
         return [
@@ -254,6 +255,7 @@ class StoryTools implements McpToolInterface
         ];
     }
 
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
     private function getUnstartStoryDescription(): array
     {
         return [

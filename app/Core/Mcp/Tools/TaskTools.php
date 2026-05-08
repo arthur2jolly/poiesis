@@ -236,6 +236,7 @@ class TaskTools implements McpToolInterface
         ];
     }
 
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
     private function getStartTaskDescription(): array
     {
         return [
@@ -251,6 +252,7 @@ class TaskTools implements McpToolInterface
         ];
     }
 
+    /** @return array{name: string, description: string, inputSchema: array<string, mixed>} */
     private function getUnstartTaskDescription(): array
     {
         return [
