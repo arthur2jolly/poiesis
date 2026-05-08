@@ -106,7 +106,7 @@ trait ScrumToolDescriptionMethods
     {
         return [
             'name' => 'commit_sprint',
-            'description' => 'Commit a sprint plan (planned -> active). Internally runs validate_sprint_plan. Returns one of three shapes: (1) success { sprint, warnings } when validation passes (or warnings acknowledged via force=true); (2) soft-fail { state: "warnings_pending", warnings, sprint_identifier } when warnings are present and force=false — no transition is performed, reissue with force=true to confirm; (3) ValidationException with one of the stable keys: commit.sprint_not_planned, commit.has_errors, commit.another_active. Hard errors are never bypassed by force.',
+            'description' => 'Commit a sprint plan (planned -> active). Internally runs validate_sprint_plan. Returns one of three shapes: (1) success { sprint, warnings, placed_count } when validation passes (or warnings acknowledged via force=true) — placed_count counts sprint items auto-placed in the first board column on this commit (POIESIS-106), warnings may include commit.no_board_columns or commit.column_wip_exceeded; (2) soft-fail { state: "warnings_pending", warnings, sprint_identifier } when warnings are present and force=false — no transition is performed, reissue with force=true to confirm; (3) ValidationException with one of the stable keys: commit.sprint_not_planned, commit.has_errors, commit.another_active. Hard errors are never bypassed by force.',
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [
