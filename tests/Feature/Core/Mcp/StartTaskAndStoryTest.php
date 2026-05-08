@@ -118,9 +118,10 @@ it('auto-fills started_at on Story transition to open', function () {
 
 it('does not overwrite started_at on subsequent status changes', function () {
     $ctx = startSetup();
+    // Start in draft so the first transition to open triggers the hook.
     $story = Story::factory()->create([
         'epic_id' => Epic::factory()->create(['project_id' => $ctx['project']->id])->id,
-        'statut' => 'open',
+        'statut' => 'draft',
     ]);
     $story->statut = 'open';
     $story->save();
