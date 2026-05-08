@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $priorite
  * @property int|null $ordre
  * @property int|null $estimation_temps
+ * @property Carbon|null $started_at
  * @property array<int, string>|null $tags
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -43,14 +44,37 @@ class Task extends Model
 
     protected $fillable = [
         'project_id', 'story_id', 'titre', 'description', 'type',
-        'nature', 'statut', 'priorite', 'ordre', 'estimation_temps', 'tags',
+        'nature', 'statut', 'priorite', 'ordre', 'estimation_temps', 'tags', 'started_at',
     ];
 
     protected $casts = [
         'tags' => 'array',
         'ordre' => 'integer',
         'estimation_temps' => 'integer',
+        'started_at' => 'datetime',
     ];
+
+    /**
+     * POIESIS-107 — auto-fill started_at the first time the task moves to
+     * `open`. Mirror of Story::booted(). Once set, started_at is never
+     * overwritten or cleared by status changes — use unstart_task to reset.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (self $task): void {
+            if (! $task->isDirty('statut')) {
+                return;
+            }
+            if ($task->statut === 'open' && $task->started_at === null) {
+                $task->started_at = Carbon::now();
+            }
+        });
+    }
+
+    public function isStarted(): bool
+    {
+        return $this->started_at !== null && $this->statut !== 'closed';
+    }
 
     public function project(): BelongsTo
     {
@@ -106,6 +130,8 @@ class Task extends Model
             'tags' => $this->tags,
             'story_identifier' => $this->story?->identifier,
             'standalone' => $this->isStandalone(),
+            'started_at' => $this->started_at?->toIso8601String(),
+            'is_started' => $this->isStarted(),
             'created_at' => $this->created_at->toIso8601String(),
         ];
     }

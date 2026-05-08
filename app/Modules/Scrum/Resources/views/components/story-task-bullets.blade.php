@@ -13,7 +13,7 @@
             @foreach($tasks as $task)
                 <li>
                     <span class="inline-flex items-center gap-1.5">
-                        @include('scrum::components.task-status-indicator', ['status' => $task->statut])
+                        @include('scrum::components.task-status-indicator', ['status' => $task->statut, 'isStarted' => $task->isStarted()])
                         <span class="font-medium text-slate-900">{{ $task->identifier }}</span>
                         <span>{{ $task->titre }}</span>
                     </span>

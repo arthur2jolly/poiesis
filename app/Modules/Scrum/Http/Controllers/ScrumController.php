@@ -227,6 +227,7 @@ class ScrumController extends Controller
                     'priority' => $task->priorite,
                     'estimate' => $task->estimation_temps,
                     'tags' => $task->tags ?? [],
+                    'is_started' => $task->isStarted(),
                 ])->all()
                 : [],
         ];

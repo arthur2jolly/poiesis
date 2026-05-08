@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $story_points
  * @property int|null $rank
  * @property bool $ready
+ * @property Carbon|null $started_at
  * @property string|null $reference_doc
  * @property array<int, string>|null $tags
  * @property Carbon $created_at
@@ -48,7 +49,7 @@ class Story extends Model
     protected $fillable = [
         'epic_id', 'titre', 'description', 'type', 'nature',
         'statut', 'priorite', 'ordre', 'story_points',
-        'reference_doc', 'tags', 'rank', 'ready',
+        'reference_doc', 'tags', 'rank', 'ready', 'started_at',
     ];
 
     protected $casts = [
@@ -57,7 +58,32 @@ class Story extends Model
         'story_points' => 'integer',
         'rank' => 'integer',
         'ready' => 'bool',
+        'started_at' => 'datetime',
     ];
+
+    /**
+     * POIESIS-107 — auto-fill started_at the first time the artifact moves to
+     * `open`. Centralised here so every status-change path (update_story_status,
+     * close_sprint cascade, future tools) benefits without per-tool plumbing.
+     * Once set, started_at is never overwritten or cleared by status changes —
+     * use the dedicated unstart_story tool to reset.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (self $story): void {
+            if (! $story->isDirty('statut')) {
+                return;
+            }
+            if ($story->statut === 'open' && $story->started_at === null) {
+                $story->started_at = Carbon::now();
+            }
+        });
+    }
+
+    public function isStarted(): bool
+    {
+        return $this->started_at !== null && $this->statut !== 'closed';
+    }
 
     public function epic(): BelongsTo
     {
@@ -118,6 +144,8 @@ class Story extends Model
             'reference_doc' => $this->reference_doc,
             'tags' => $this->tags,
             'tasks_count' => $this->tasks_count ?? $this->tasks()->count(),
+            'started_at' => $this->started_at?->toIso8601String(),
+            'is_started' => $this->isStarted(),
             'created_at' => $this->created_at->toIso8601String(),
         ];
     }
