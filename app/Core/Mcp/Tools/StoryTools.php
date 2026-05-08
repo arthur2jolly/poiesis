@@ -13,6 +13,7 @@ use App\Core\Models\Story;
 use App\Core\Models\User;
 use App\Core\Services\DependencyService;
 use App\Core\Support\Role;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -517,7 +518,7 @@ class StoryTools implements McpToolInterface
         }
 
         if ($story->started_at === null) {
-            $story->started_at = \Carbon\Carbon::now();
+            $story->started_at = Carbon::now();
             $story->save();
         }
 

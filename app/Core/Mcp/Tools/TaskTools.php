@@ -13,6 +13,7 @@ use App\Core\Models\Task;
 use App\Core\Models\User;
 use App\Core\Services\DependencyService;
 use App\Core\Support\Role;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -512,7 +513,7 @@ class TaskTools implements McpToolInterface
         }
 
         if ($task->started_at === null) {
-            $task->started_at = \Carbon\Carbon::now();
+            $task->started_at = Carbon::now();
             $task->save();
         }
 
