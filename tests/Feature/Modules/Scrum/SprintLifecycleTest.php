@@ -801,3 +801,160 @@ it('returns a valid JSON-RPC envelope on commit_sprint success', function () {
     expect($payload['sprint'])->toHaveKey('identifier');
     expect($payload['sprint']['status'])->toBe('active');
 });
+
+// ============================================================
+// POIESIS-106 — commit_sprint auto-places sprint items on the board
+// ============================================================
+
+it('auto-places every sprint item in the first board column on commit', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    $i1 = seedReadyItem($sprint);
+    $i2 = seedReadyItem($sprint);
+    $i3 = seedReadyItem($sprint);
+
+    $todo = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'To Do',
+        'position' => 0,
+    ]);
+    $inProgress = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'In Progress',
+        'position' => 1,
+    ]);
+
+    $result = assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($result)->toHaveKeys(['sprint', 'warnings', 'placed_count']);
+    expect($result['placed_count'])->toBe(3);
+    expect($result['warnings'])->toBe([]);
+    expect(ScrumItemPlacement::where('column_id', $todo->id)->count())->toBe(3);
+    expect(ScrumItemPlacement::where('column_id', $inProgress->id)->count())->toBe(0);
+
+    // Positions 0, 1, 2 in insertion order.
+    $placements = ScrumItemPlacement::where('column_id', $todo->id)->orderBy('position')->get();
+    expect($placements->pluck('sprint_item_id')->all())->toBe([$i1->id, $i2->id, $i3->id]);
+    expect($placements->pluck('position')->all())->toBe([0, 1, 2]);
+});
+
+it('does not move items already placed on the board (additive only)', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    $i1 = seedReadyItem($sprint);
+    $i2 = seedReadyItem($sprint);
+
+    $todo = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'To Do',
+        'position' => 0,
+    ]);
+    $inProgress = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'In Progress',
+        'position' => 1,
+    ]);
+
+    // i1 is already placed in In Progress before commit.
+    ScrumItemPlacement::create([
+        'sprint_item_id' => $i1->id,
+        'column_id' => $inProgress->id,
+        'position' => 0,
+    ]);
+
+    $result = assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($result['placed_count'])->toBe(1);
+    expect(ScrumItemPlacement::where('column_id', $inProgress->id)->where('sprint_item_id', $i1->id)->exists())->toBeTrue();
+    expect(ScrumItemPlacement::where('column_id', $todo->id)->where('sprint_item_id', $i2->id)->exists())->toBeTrue();
+});
+
+it('emits commit.no_board_columns warning when project has no columns', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+    // No ScrumColumn rows for the project.
+
+    $result = assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($result['placed_count'])->toBe(0);
+    expect($result['warnings'])->not->toBeEmpty();
+    $codes = collect($result['warnings'])->pluck('code')->all();
+    expect($codes)->toContain('commit.no_board_columns');
+    expect(ScrumItemPlacement::count())->toBe(0);
+    expect($sprint->fresh()->status)->toBe('active');
+});
+
+it('respects column hard WIP limit and emits commit.column_wip_exceeded warning', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+    seedReadyItem($sprint);
+    seedReadyItem($sprint);
+
+    // Hard limit set to 2 — 3rd item must overflow.
+    ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'To Do',
+        'position' => 0,
+        'limit_hard' => 2,
+    ]);
+
+    $result = assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect($result['placed_count'])->toBe(2);
+    expect($result['warnings'])->not->toBeEmpty();
+    $wipWarning = collect($result['warnings'])->firstWhere('code', 'commit.column_wip_exceeded');
+    expect($wipWarning)->not->toBeNull();
+    expect($wipWarning['column_name'])->toBe('To Do');
+    expect(count($wipWarning['unplaced_items']))->toBe(1);
+    expect($sprint->fresh()->status)->toBe('active');
+    expect(ScrumItemPlacement::count())->toBe(2);
+});
+
+it('picks the column with the lowest position as the first column', function () {
+    $ctx = lifecycleSetup();
+    $sprint = makeSprint($ctx['project'], 'planned');
+    seedReadyItem($sprint);
+
+    // Create columns out of order — picking by position must still resolve "Backlog" (position=0).
+    $review = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'Review',
+        'position' => 2,
+    ]);
+    $backlog = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'Backlog',
+        'position' => 0,
+    ]);
+    $inProgress = ScrumColumn::create([
+        'tenant_id' => $ctx['project']->tenant_id,
+        'project_id' => $ctx['project']->id,
+        'name' => 'In Progress',
+        'position' => 1,
+    ]);
+
+    assertLifecycleSuccess(
+        mcpLifecycleCall('commit_sprint', ['identifier' => $sprint->identifier], $ctx['token'])
+    );
+
+    expect(ScrumItemPlacement::where('column_id', $backlog->id)->count())->toBe(1);
+    expect(ScrumItemPlacement::where('column_id', $inProgress->id)->count())->toBe(0);
+    expect(ScrumItemPlacement::where('column_id', $review->id)->count())->toBe(0);
+});

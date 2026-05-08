@@ -11,6 +11,7 @@ use App\Core\Models\User;
 use App\Modules\Scrum\Models\ScrumColumn;
 use App\Modules\Scrum\Models\ScrumItemPlacement;
 use App\Modules\Scrum\Models\Sprint;
+use App\Modules\Scrum\Models\SprintItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -183,7 +184,7 @@ trait ScrumSprintToolMethods
     }
 
     /**
-     * commit_sprint MCP tool — POIESIS-10 / POIESIS-49.
+     * commit_sprint MCP tool — POIESIS-10 / POIESIS-49 / POIESIS-106.
      *
      * Stable error keys exposed to MCP consumers:
      *   - commit.sprint_not_planned : sprint is not in status 'planned'
@@ -193,8 +194,12 @@ trait ScrumSprintToolMethods
      * Soft-fail response (force=false + warnings present, no transition done):
      *   { state: 'warnings_pending', warnings: [...], sprint_identifier: 'PROJ-S1' }
      *
-     * Success response:
-     *   { sprint: { ...format() }, warnings: [...] }   // warnings non-empty only when force=true
+     * Success response (POIESIS-106):
+     *   { sprint: { ...format() }, warnings: [...], placed_count: int }
+     *   - warnings may include validate_sprint_plan items (when force=true) AND
+     *     post-commit placement warnings (commit.no_board_columns, commit.column_wip_exceeded).
+     *   - placed_count = number of sprint items auto-placed in the first board column
+     *     during this commit (excludes items already placed beforehand).
      *
      * @param  array<string, mixed>  $params
      * @return array<string, mixed>
@@ -250,11 +255,118 @@ trait ScrumSprintToolMethods
             $locked->save();
             $locked->loadCount('items');
 
+            // POIESIS-106: place every sprint item not yet placed in the first
+            // board column. Strictly additive — items placed beforehand keep
+            // their column. Same transaction as the status transition so a
+            // placement failure rolls the whole commit back.
+            $autoPlace = $this->autoPlaceSprintItemsOnBoard($locked);
+
             return [
                 'sprint' => $locked->format(),
-                'warnings' => $validation['warnings'],
+                'warnings' => array_merge($validation['warnings'], $autoPlace['warnings']),
+                'placed_count' => $autoPlace['placed_count'],
             ];
         });
+    }
+
+    /**
+     * Auto-place sprint items into the first board column on commit.
+     *
+     * Behaviour (POIESIS-106):
+     *   - Picks the lowest-position ScrumColumn of the sprint's project. If none
+     *     exist, returns a `commit.no_board_columns` warning and zero placements.
+     *   - Iterates SprintItems of the sprint that have no existing
+     *     ScrumItemPlacement row. Items already placed (regardless of column)
+     *     are left untouched.
+     *   - Appends each unplaced item to the end of the first column. Hard WIP
+     *     limit is honoured: items that would exceed `limit_hard` are skipped
+     *     and surfaced via a `commit.column_wip_exceeded` warning. The commit
+     *     itself never fails because of WIP — the agent receives the list of
+     *     skipped items and decides what to do.
+     *
+     * Caller MUST run this inside the same DB::transaction as the status
+     * transition so a placement failure rolls back the commit.
+     *
+     * @return array{placed_count: int, warnings: array<int, array<string, mixed>>}
+     */
+    private function autoPlaceSprintItemsOnBoard(Sprint $sprint): array
+    {
+        /** @var ScrumColumn|null $firstColumn */
+        $firstColumn = ScrumColumn::where('project_id', $sprint->project_id)
+            ->orderBy('position')
+            ->lockForUpdate()
+            ->first();
+
+        if ($firstColumn === null) {
+            return [
+                'placed_count' => 0,
+                'warnings' => [[
+                    'code' => 'commit.no_board_columns',
+                    'message' => 'Project has no Scrum board columns configured. Sprint items were not placed automatically.',
+                    'severity' => 'warning',
+                ]],
+            ];
+        }
+
+        // Lock the target column's placement set to serialise concurrent commits.
+        ScrumItemPlacement::where('column_id', $firstColumn->id)->lockForUpdate()->get();
+
+        $placedSprintItemIds = ScrumItemPlacement::query()
+            ->whereIn('sprint_item_id', SprintItem::where('sprint_id', $sprint->id)->select('id'))
+            ->pluck('sprint_item_id')
+            ->all();
+
+        $unplacedItems = SprintItem::where('sprint_id', $sprint->id)
+            ->whereNotIn('id', $placedSprintItemIds)
+            ->orderBy('position')
+            ->with('artifact.artifactable')
+            ->get();
+
+        $count = ScrumItemPlacement::where('column_id', $firstColumn->id)->count();
+        $placedCount = 0;
+        $overflowIdentifiers = [];
+
+        foreach ($unplacedItems as $item) {
+            if ($firstColumn->limit_hard !== null && $count >= $firstColumn->limit_hard) {
+                $overflowIdentifiers[] = $this->describeSprintItemForWarning($item);
+
+                continue;
+            }
+
+            ScrumItemPlacement::create([
+                'sprint_item_id' => $item->id,
+                'column_id' => $firstColumn->id,
+                'position' => $count,
+            ]);
+            $count++;
+            $placedCount++;
+        }
+
+        $warnings = [];
+        if ($overflowIdentifiers !== []) {
+            $warnings[] = [
+                'code' => 'commit.column_wip_exceeded',
+                'message' => "Column '{$firstColumn->name}' reached its hard WIP limit ({$firstColumn->limit_hard}). Items not placed automatically: ".implode(', ', $overflowIdentifiers).'.',
+                'severity' => 'warning',
+                'column_name' => $firstColumn->name,
+                'unplaced_items' => $overflowIdentifiers,
+            ];
+        }
+
+        return ['placed_count' => $placedCount, 'warnings' => $warnings];
+    }
+
+    /**
+     * Best-effort identifier for an unplaced sprint item, used in WIP warnings.
+     */
+    private function describeSprintItemForWarning(SprintItem $item): string
+    {
+        $artifactable = $item->artifact?->artifactable;
+        if ($artifactable instanceof Story || $artifactable instanceof Task) {
+            return (string) $artifactable->identifier;
+        }
+
+        return (string) $item->id;
     }
 
     /**
